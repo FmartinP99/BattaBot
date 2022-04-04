@@ -9,7 +9,7 @@ Install:
 - If you want to use the player function you must have FFMPEG installed somewhere in your system, provide it's bin/ffmpeg.exe 's path.
 - Run the battaStart.py file.
 
-if Jinja2 error happens try:
+If Jinja2 error happens try:
 pip install Jinja2==2.11.3 Markupsafe==1.1.1
 
 Features:
