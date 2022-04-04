@@ -1,0 +1,17 @@
+*.db
+*.db=journal
+__pycache__
+lib/bot/token.0
+token.0
+QuartRoutes/for_the_api.py
+QuartRoutes/for_the_gui.py
+QuartRoutes/quart_routes.py
+Files/coverLocalMusic.jpg
+Files/diagram.png
+Files/reminders.txt
+Files/profpic.png
+database_mongo/db_con__with_other_battabot
+cogs/random.py
+backup_depr
+database_mongo/plot/plotPoints.py
+ffmpeg
