@@ -6,8 +6,8 @@ Install:
 - Add your .token0 file in the root folder.
 - Run the command: pip install -r requirements.txt.
 - Set the variables in the Files/globalsDefaultValueImport.txt and Files/globalsForTheDatabase.txt (if you want MongoDB).
-- If you want to use the player function you must have FFMPEG installed somewhere in your system, provide it's bin/ffmpeg.exe 's path .
-- Run the battaStart.py file
+- If you want to use the player function you must have FFMPEG installed somewhere in your system, provide it's bin/ffmpeg.exe 's path.
+- Run the battaStart.py file.
 
 Features:
 - MyAnimeList search.
