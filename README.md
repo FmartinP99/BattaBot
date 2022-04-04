@@ -2,7 +2,7 @@
 Discordbot written in Python with (optional) MongoDB.
 
 Install:
-Clone the repo.
+- Clone the repo.
 - add your .token0 file in the root folder. 
 - run the command: pip install -r requirements.txt
 - set the variables in the Files/globalsDefaultValueImport.txt and Files/globalsForTheDatabase.txt (if you want MongoDB)
