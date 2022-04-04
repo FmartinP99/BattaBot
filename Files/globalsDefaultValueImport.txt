@@ -3,6 +3,6 @@ OWNER_ID = "" # YOUR DISCORD ID
 BOT_ID = "" # BOT DISCORD ID
 COVER = "" # must be either empty double-quotes or a valid picture
 LOCAL_MEDIAPLAYER_FOLDER_PATH = "C:\Users\Public\Music" # default folder for your music
-FFMPEG = "e" # Your Path for the ffmpeg
+FFMPEG = "" # Your Path for the ffmpeg
 DATABASE = "False" # ONLY TURN ON IF YOU HAVE YOUR OWN MongoDB
 API = "False" # DON'T TURN ON UNLESS YOU WANT TO HAVE YOUR OWN (FOR NOW)
