@@ -1,4 +1,4 @@
-# BattaBot
+# バッタBot
 Discordbot written in Python with (optional) MongoDB.
 
 Install:
