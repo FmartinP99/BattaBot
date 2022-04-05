@@ -59,7 +59,7 @@ class RemindMe(commands.Cog):
             elif self.regexes(time) == 5 and (str(args[0]).startswith("+")):
                 set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, 0, _Microsecond) + timedelta(minutes=int(time))
                 message_to_send = ' '.join(args)
-                message_to_send = message_to_send[1:]  # levágja a + -t
+                message_to_send = message_to_send[1:]  # cuts the "+"
                 valid_regex = True
 
 
