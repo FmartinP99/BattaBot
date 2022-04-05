@@ -15,6 +15,7 @@ class HelpCommandAttributes():
         self.helpMessageWritten = None #  {prefix}help   - message
         self.makeEmbedMessages()
 
+
     def makeEmbedMessages(self):
         em = discord.Embed(title='0 - Help',
                            description=f'Use {prefix}help <command> or {prefix}help <module>_<command> (if the <module> and the <command> has the same name) for extended information!',
@@ -121,14 +122,10 @@ class HelpCommands(commands.Cog):
             helpMsg.set_thumbnail(url=context.guild.me.avatar_url)
             helpBot.helpMessageWritten = await context.fetch_message(context.message.id)
             helpBot.helpMessage = await context.send(embed=helpMsg)
-            await helpBot.helpMessage.add_reaction('0\u20e3')
-            await helpBot.helpMessage.add_reaction('1\u20e3')
-            await helpBot.helpMessage.add_reaction('2\u20e3')
-            await helpBot.helpMessage.add_reaction('3\u20e3')
-            await helpBot.helpMessage.add_reaction('4\u20e3')
-            await helpBot.helpMessage.add_reaction('5\u20e3')
-            await helpBot.helpMessage.add_reaction('6\u20e3')
-
+            for i in range(0, min(len(helpBot.embedList), 10)):
+                await helpBot.helpMessage.add_reaction(f'{i}\u20e3')
+            if len(helpBot.embedList) > 10:
+                await context.send("I can only make the first 10 module interactive!")
             helpBot.g_context = context
 
             self.helpBots[context.guild.id] = helpBot
@@ -151,53 +148,14 @@ class HelpCommands(commands.Cog):
     @commands.Cog.listener("on_reaction_add")
     async def listenReactionHelp(self, reaction, user):
 
-        zero = '0\u20e3'
-        one = '1\u20e3'
-        two = '2\u20e3'
-        three = '3\u20e3'
-        four = '4\u20e3'
-        five = '5\u20e3'
-        six = '6\u20e3'
-        seven = '7\u20e3'
-        eight = '8\u20e3'
-        nine = '9\u20e3'
-
         helpBot = self.helpBots[reaction.message.guild.id]
+
+        reactions = {f'{i}\u20e3': i for i in range(len(helpBot.embedList))}
 
         if user.id != g_botid:
             try:
-                if reaction.emoji == zero and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 0
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == one and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 1
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == two and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 2
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == three and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 3
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == four and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 4
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == five and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 5
-                    await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
-                    await helpBot.helpMessage.remove_reaction(reaction, user)
-
-                elif reaction.emoji == six and helpBot.helpMessage.id == reaction.message.id:
-                    helpBot.helpListaIndex = 6
+                if helpBot.helpMessage.id == reaction.message.id:
+                    helpBot.helpListaIndex = reactions.get(reaction.emoji, None)
                     await self.messageChange(helpBot.g_context, helpBot.helpMessage.id)
                     await helpBot.helpMessage.remove_reaction(reaction, user)
 

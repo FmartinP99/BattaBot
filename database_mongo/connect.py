@@ -1,8 +1,6 @@
 import re
 from pymongo import MongoClient
-import os
-import sys
-from datetime import date, datetime
+from datetime import datetime
 
 connected = False
 
@@ -10,7 +8,6 @@ connected = False
 def start():
 
     global connected
-
 
     for line in open('Files/globalsForTheDatabase.txt', 'r', encoding='utf-8'):
         var = re.search('\"(.*)\"', line).group(1)

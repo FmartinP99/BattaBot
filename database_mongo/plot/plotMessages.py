@@ -1,17 +1,17 @@
 from collections import defaultdict
 import matplotlib.pyplot as plt
-import matplotlib
 from database_mongo.connect import collection_messages, collection_users
 from datetime import datetime, timedelta
 import calendar
 from database_mongo.plot.monthDate import get_month
 from matplotlib.pyplot import figure
 
-def get_data(server_id, queryMonthorDayLength=None):
+
+def get_data(server_id, query_month_or_day_length=None):
 
     users = collection_users.find({"_id": {"$regex": "^User" }, "serverID": server_id}, {"_id":0, "Name":1, "Discriminator":1,})
 
-    if queryMonthorDayLength is None:
+    if query_month_or_day_length is None:
         limit = 14
         messages = collection_messages.find({"_id": {"$regex": f"^MessageObject.*?{server_id}"}},
                                    {"_id": 0,"Date": 1, "Users": 1}).sort('Date', -1).limit(limit)
@@ -20,15 +20,15 @@ def get_data(server_id, queryMonthorDayLength=None):
     else:
 
         try:
-            queryMonthorDayLength = min(int(queryMonthorDayLength), 366)
+            query_month_or_day_length = min(int(query_month_or_day_length), 366)
             messages = collection_messages.find({"_id": {"$regex": f"^MessageObject.*?{server_id}"}},
-                                       {"_id": 0, "Date": 1, "Users": 1}).sort('Date', -1).limit(queryMonthorDayLength)
+                                       {"_id": 0, "Date": 1, "Users": 1}).sort('Date', -1).limit(query_month_or_day_length)
 
-            make_list(users, messages, month_length=0, addition=f"Last {queryMonthorDayLength} days")
+            make_list(users, messages, month_length=0, addition=f"Last {query_month_or_day_length} days")
 
         except:
             try:
-                addition, accepted_month = get_month(queryMonthorDayLength)
+                addition, accepted_month = get_month(query_month_or_day_length)
                 now = datetime.now()
                 month = calendar.monthrange(now.year, accepted_month)
                 datetimeBegin = datetime(year=now.year, month=accepted_month, day=1, hour=0, minute=0, microsecond=0)
@@ -88,10 +88,10 @@ def make_list(users, messages, month_length, addition):
 
     plot(userList, msglist, dateList, addition)
 
-def plot(userList, msglist, dateList, addition):
 
+def plot(user_list, msg_list, date_list, addition):
 
-    figure(num=None, figsize=(16+len(dateList), 9+len(userList)), dpi=60, facecolor='lightgrey', edgecolor='k')
+    figure(num=None, figsize=(16 + len(date_list), 9 + len(user_list)), dpi=60, facecolor='lightgrey', edgecolor='k')
     plt.rcParams['figure.facecolor'] = "lightgrey"
     plt.rcParams['axes.facecolor'] = "lightgrey"
     plt.rcParams['lines.color'] = "white"
@@ -101,8 +101,8 @@ def plot(userList, msglist, dateList, addition):
     plt.rc('xtick', labelsize=18)
 
     index = 0
-    while index < len(userList):
-        plt.plot(dateList, msglist[index], marker='o', label=f"{userList[index]}", linewidth=3)
+    while index < len(user_list):
+        plt.plot(date_list, msg_list[index], marker='o', label=f"{user_list[index]}", linewidth=3)
         index += 1
 
     plt.title(f"Messages Sent Daily\n( {addition} )")

@@ -149,14 +149,17 @@ class MalSearch(commands.Cog):
                 if len(malSearchAttributes.titles) > 0:
                     print(f'Searched with: {malSearchAttributes.similarity}')
                     malSearchAttributes.titles = list(set(malSearchAttributes.titles))
-                    messageToSend = ""
-
+                    em = discord.Embed(title='Results',
+                                       description=f"Try not to click on the reactions too fast, "
+                                                   f"because it will broke the MAL API."
+                                                   f" (if the reaction removal didn't occur) "
+                                                   f"If it happens, just use the command again.",
+                                       color=0x71368a)
                     for i in range(0, len(malSearchAttributes.titles)):
-                        messageToSend = messageToSend + str(i) + ' - ' + malSearchAttributes.titles[i] + '\n'
-                    messageToSend = messageToSend + "\nTry not to click on the reactions too fast, because it will broke the MAL API." \
-                                                    " (if the reaction removal didn't occur)\n" \
-                                                    "If it happens, just use the command again."
-                    malSearchAttributes.traceMoeMessage = await context.send(f"```{messageToSend}```")
+                        em.add_field(name=f"{i}", value=f"{malSearchAttributes.titles[i]}")
+                    em.set_thumbnail(url=context.guild.me.avatar_url)
+                    em.set_footer(text=f"Made by:\nTReKeSS#3943")
+                    malSearchAttributes.traceMoeMessage = await context.send(embed=em)
                     malSearchAttributes.context = context
 
                     for i in range(0, len(malSearchAttributes.titles)):
@@ -181,19 +184,12 @@ class MalSearch(commands.Cog):
     async def listenTraceMoe(self, reaction, user):
 
         malSearchAttributes = self.malSearchAttributes[reaction.message.guild.id]
-        reactions = {}
-        for i in range(0, len(malSearchAttributes.titles)):
-            reactions[f'{i}\u20e3'] = i
-
+        reactions = {f'{i}\u20e3': i for i in range(len(malSearchAttributes.titles))}
         if user.id != g_botid:
-
             try:
                 malSearchAttributesMessageId = malSearchAttributes.traceMoeMessage.id
-
                 if malSearchAttributesMessageId == reaction.message.id:
-
                     reactedNumber = reactions.get(reaction.emoji, None)
-
                     if reactedNumber is not None:
                         if malSearchAttributes.traceMoeMessageReactions[reactedNumber] is False:
                             malSearchAttributes.traceMoeMessageReactions[reactedNumber] = True
