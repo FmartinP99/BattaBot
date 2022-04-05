@@ -1,7 +1,11 @@
 # バッタBot
-Discordbot written in Python with (optional) MongoDB.
-
+Discordbot written in Python with (optional) MongoDB.\
+\
+Recommended Python version: 3.9 
+\
+\
 Install:
+- Create a virtual enviroment (PyCharm does this by default)
 - Clone the repo.
 - Add your .token0 file in the root folder.
 - Run the command inside the root folder: pip install -r requirements.txt.
