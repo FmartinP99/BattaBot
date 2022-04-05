@@ -3,11 +3,8 @@ from datetime import datetime, timedelta
 from dataclasses import dataclass
 import asyncio
 import re
-import nest_asyncio
 import os
 import sys
-
-nest_asyncio.apply() #idk anymore if this is necessary but I'm too afraid to turn it off
 
 
 class RemindMe(commands.Cog):
