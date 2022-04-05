@@ -9,6 +9,7 @@ import sys
 
 nest_asyncio.apply() #idk anymore if this is necessary but I'm too afraid to turn it off
 
+
 class RemindMe(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -117,10 +118,10 @@ class RemindMe(commands.Cog):
                 await asyncio.sleep(sleepTimer)
                 await self.ping_bot(context, message_to_send, context.message.author.id)
 
-    async def ping_bot(self, context, uzenet, author):
+    async def ping_bot(self, context, msg, author):
 
-        if uzenet != "":
-            await context.send(f"<@{author}>\n{str(uzenet)}")
+        if msg != "":
+            await context.send(f"<@{author}>\n{str(msg)}")
         else:
             await context.send(context.author.mention)
 
@@ -186,14 +187,13 @@ class RemindMe(commands.Cog):
 
     async def remindme_readfile(self):
 
-        linesArray = []
+        lines_array = []
         with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as f:
             if f:
                 for line in f:
-                    linesArray.append(line)
+                    lines_array.append(line)
 
-
-        for line in linesArray:
+        for line in lines_array:
             currentline = line.split(f"{self.separator}")
             channelid = int(currentline[0])
             authorid = int(currentline[1])
@@ -211,7 +211,6 @@ class RemindMe(commands.Cog):
             sleepTimer = (getTime - datetime.now()).total_seconds()
 
             await self.auto_mention(sleepTimer, channelid, sentMessage, author)
-
 
     async def auto_mention(self, sleepTimer, channelid, sentMessage, author):
 
