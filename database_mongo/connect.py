@@ -11,35 +11,34 @@ def start():
 
     global connected
 
-    try:
-        for line in open('Files/globalsForTheDatabase.txt', 'r', encoding='utf-8'):
-            var = re.search('\"(.*)\"', line).group(1)
 
-            if line.startswith("CONNECTION"):
-                connection = var
+    for line in open('Files/globalsForTheDatabase.txt', 'r', encoding='utf-8'):
+        var = re.search('\"(.*)\"', line).group(1)
+
+        if line.startswith("CONNECTION"):
+            connection = var
 
 
-            elif line.startswith("DB_NAME"):
-                db_name = var
+        elif line.startswith("DB_NAME"):
+            db_name = var
 
-            elif line.startswith("DB_MESSAGES_NAME"):
-                db_messages = var
+        elif line.startswith("DB_MESSAGES_NAME"):
+            db_messages = var
 
-            elif line.startswith("DB_USERS_NAME"):
-                db_users = var
+        elif line.startswith("DB_USERS_NAME"):
+            db_users = var
 
-            elif line.startswith("DB_GROUPS_NAME"):
-                db_groups = var
+        elif line.startswith("DB_GROUPS_NAME"):
+            db_groups = var
 
-        cluster = MongoClient(f"{connection}", connect=False)
-        db = cluster[f"{db_name}"]
-        collection_messages = db[f"{db_messages}"]
-        collection_users = db[f"{db_users}"]
-        collection_groups = db[f"{db_groups}"]
-        connected = True
-        return collection_messages, collection_users, collection_groups
-    except:
-        sys.exc_info()
+    cluster = MongoClient(f"{connection}", connect=False)
+    db = cluster[f"{db_name}"]
+    collection_messages = db[f"{db_messages}"]
+    collection_users = db[f"{db_users}"]
+    collection_groups = db[f"{db_groups}"]
+    connected = True
+    return collection_messages, collection_users, collection_groups
+
 
 
 if not connected:

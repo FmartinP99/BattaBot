@@ -10,8 +10,11 @@ Files/coverLocalMusic.jpg
 Files/diagram.png
 Files/reminders.txt
 Files/profpic.png
+Files/globalsForTheDatabase.txt
+Files/globalsDefaultValueImport.txt
 database_mongo/db_con__with_other_battabot
 cogs/random.py
 backup_depr
 database_mongo/plot/plotPoints.py
 ffmpeg
+.idea
