@@ -13,6 +13,7 @@ class ModuleControl(commands.Cog):
         if extension not in PROTECTED_MODULES_FROM_LOADING and extension not in PROTECTED_MODULES:
             bot.load_extension(f'cogs.{extension}')
             print(f"{extension} LOADED!")
+            await context.send(f"{extension} loaded!")
         else:
             await context.send("This module is protected from loading!")
 
@@ -22,6 +23,7 @@ class ModuleControl(commands.Cog):
         if extension not in PROTECTED_MODULES and extension not in PROTECTED_MODULES_FROM_LOADING:
             bot.unload_extension(f'cogs.{extension}')
             print(f"{extension} DELETED!")
+            await context.send(f"{extension} unloaded!")
         else:
             await context.send(f"This module is protected from unloading!")
 
@@ -31,6 +33,7 @@ class ModuleControl(commands.Cog):
         if extension not in PROTECTED_MODULES_FROM_LOADING:
             bot.unload_extension(f'cogs.{extension}')
             bot.load_extension(f'cogs.{extension}')
+            await context.send(f"{extension} reloaded!")
         else:
             await context.send("This module is protected from reloading!")
 

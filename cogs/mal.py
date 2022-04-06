@@ -1,9 +1,11 @@
 import difflib
 from jikanpy import AioJikan
-from botMain import *
+from discord.ext import commands
+import discord
 import tracemoepy
 from tracemoepy.errors import TooManyRequests
 import sys
+from botMain import prefix, IS_BOT_READY
 from globals import g_botid
 from dataclasses import dataclass
 
@@ -23,6 +25,10 @@ class MalSearch(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.malSearchAttributes = {}
+
+        if IS_BOT_READY and not self.malSearchAttributes:
+            for guild in self.bot.guilds:
+                self.malSearchAttributes[guild.id] = MalSearchAttributes()
 
     @commands.command()
     async def mal(self, context, *, name=""):

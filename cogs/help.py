@@ -3,7 +3,7 @@ from discord.ext import commands
 from botMain import prefix
 import discord
 from globals import g_cover, g_botid
-
+from botMain import IS_BOT_READY
 
 class HelpCommandAttributes():
 
@@ -14,6 +14,7 @@ class HelpCommandAttributes():
         self.embedList = []
         self.helpMessageWritten = None #  {prefix}help   - message
         self.makeEmbedMessages()
+
 
 
     def makeEmbedMessages(self):
@@ -103,6 +104,10 @@ class HelpCommands(commands.Cog):
         self.bot = bot
         self.g_cover = g_cover
         self.helpBots = {}
+
+        if IS_BOT_READY and not self.helpBots:
+            for guild in self.bot.guilds:
+                self.helpBots[guild.id] = HelpCommandAttributes()
 
     @commands.group(invoke_without_command=True)
     async def help(self, context, *args):

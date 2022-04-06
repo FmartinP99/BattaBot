@@ -1,6 +1,7 @@
 from discord.ext import commands
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from botMain import IS_BOT_READY
 import asyncio
 import re
 import os

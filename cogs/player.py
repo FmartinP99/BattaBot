@@ -7,7 +7,7 @@ from discord.utils import get as get
 from discord import FFmpegPCMAudio
 import os
 from random import choice
-from botMain import check_owner
+from botMain import check_owner, IS_BOT_READY
 from globals import g_cover, g_localMediaPlayerFolderPath, g_ffmpeg, g_botid
 import asyncio
 from typing import Optional
@@ -82,8 +82,11 @@ class Player(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.g_cover = g_cover
-
         self.mediaBots = {}
+
+        if IS_BOT_READY and not self.mediaBots:
+            for guild in self.bot.guilds:
+                self.mediaBots[guild.id] = PlayerAttributes()
 
     def get_song_dict(self, server_id):
 

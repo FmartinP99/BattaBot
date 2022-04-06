@@ -6,12 +6,13 @@ from database_mongo import connect
 
 PROTECTED_MODULES = ["module_control"]  # can't unload these
 
-# can't load these, sadly there is no <on_module_loaded> listener or something like that
-# so it wont do the <on_ready> action after reloading the modules
-PROTECTED_MODULES_FROM_LOADING = ["player", "mal", "help"]
+# can't load <remindme> because the async control will be duplicated each time it is loaded since it works with asyncio.sleep
+PROTECTED_MODULES_FROM_LOADING = ["remindme"]
 
 bot = commands.Bot(command_prefix=f'{g_prefix}', help_command=None)
 prefix = g_prefix
+
+IS_BOT_READY = False
 
 with open("token.0", "r", encoding="utf-8") as tf:
     token = tf.read()
@@ -23,19 +24,20 @@ def check_owner(context):
 
 @bot.event
 async def on_ready():
+    global IS_BOT_READY
     print("Bot is ready!")
     await status_to_change("New tracemoe command available")
     if g_database is True:
         connect.start()
     else:
         print("You didn't provide a database!")
+    IS_BOT_READY = True
 
 
 
 @bot.command()
 @commands.check(check_owner)
 async def status(context, *msg):
-    print(bot.id)
     msg = ' '.join(msg)
     await status_to_change(msg)
 
@@ -51,9 +53,9 @@ async def ping(context):
     await context.send(f"Pong! {round(bot.latency * 1000)}ms")
 
 @bot.event
-async def on_command_error(context, error):   # összes hibánál triggerelődik
+async def on_command_error(context, error):   # triggers at every error
 
-    if isinstance(error, commands.MissingRequiredArgument): # összes MissingRequiredArgumentre nézi
+    if isinstance(error, commands.MissingRequiredArgument):
         await context.send(f"Missing argument!")
 
 
@@ -77,6 +79,7 @@ if g_api is False:
     print(f"The bot's API is disabled!")
 
 if len(g_ffmpeg) == 0:
+    PROTECTED_MODULES_FROM_LOADING.append('player')
     print("There is no FFMPEG path in globalsDefaultValueImport.txt")
 
 if g_database == False:
