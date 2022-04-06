@@ -4,8 +4,11 @@ from globals import g_database, g_prefix, g_ownerid, g_api, g_ffmpeg
 import os
 from database_mongo import connect
 
-PROTECTED_MODULES = ["help", "module_control"]  # can't unload these
-PROTECTED_MODULES_FROM_LOADING = []  # can't load these
+PROTECTED_MODULES = ["module_control"]  # can't unload these
+
+# can't load these, sadly there is no <on_module_loaded> listener or something like that
+# so it wont do the <on_ready> action after reloading the modules
+PROTECTED_MODULES_FROM_LOADING = ["player", "mal", "help"]
 
 bot = commands.Bot(command_prefix=f'{g_prefix}', help_command=None)
 prefix = g_prefix
@@ -74,7 +77,6 @@ if g_api is False:
     print(f"The bot's API is disabled!")
 
 if len(g_ffmpeg) == 0:
-    PROTECTED_MODULES_FROM_LOADING.append('player')
     print("There is no FFMPEG path in globalsDefaultValueImport.txt")
 
 if g_database == False:

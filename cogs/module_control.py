@@ -10,18 +10,20 @@ class ModuleControl(commands.Cog):
     @commands.command()
     @commands.check(check_owner)  # if TRUE it runs if FALSE it won't
     async def load(self, context, extension):
-        if extension not in PROTECTED_MODULES_FROM_LOADING:
+        if extension not in PROTECTED_MODULES_FROM_LOADING and extension not in PROTECTED_MODULES:
             bot.load_extension(f'cogs.{extension}')
             print(f"{extension} LOADED!")
+        else:
+            await context.send("This module is protected from loading!")
 
     @commands.command()
     @commands.check(check_owner)
     async def unload(self, context, extension):
-        if extension not in PROTECTED_MODULES or extension not in PROTECTED_MODULES_FROM_LOADING:
+        if extension not in PROTECTED_MODULES and extension not in PROTECTED_MODULES_FROM_LOADING:
             bot.unload_extension(f'cogs.{extension}')
             print(f"{extension} DELETED!")
         else:
-            await context.send(f"{extension} can't be deleted!")
+            await context.send(f"This module is protected from unloading!")
 
     @commands.command()
     @commands.check(check_owner)
@@ -29,7 +31,8 @@ class ModuleControl(commands.Cog):
         if extension not in PROTECTED_MODULES_FROM_LOADING:
             bot.unload_extension(f'cogs.{extension}')
             bot.load_extension(f'cogs.{extension}')
-            print(f"{extension} RELOADED!")
+        else:
+            await context.send("This module is protected from reloading!")
 
     @load.error  # triggers at only the <load> command
     async def load_error(self, context, error):

@@ -512,6 +512,5 @@ class HelpCommands(commands.Cog):
         for guild in self.bot.guilds:
             self.helpBots[guild.id] = HelpCommandAttributes()
 
-
 def setup(bot):
     bot.add_cog(HelpCommands(bot))
