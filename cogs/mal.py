@@ -54,7 +54,6 @@ class MalSearch(commands.Cog):
                 result_list = results['results']
                 if result_list:
                     titles = list()
-
                     for index in range(0, len(result_list)):
                         titles.append(result_list[index]['title'].lower())
                     searched_title = difflib.get_close_matches(f'{searched_name}', titles, n=1, cutoff=0.90)

@@ -22,6 +22,7 @@ class RemindMe(commands.Cog):
         _Day = nowtime.day
         _Hour = nowtime.hour
         _Minute = nowtime.minute
+        _Second = nowtime.second
         _Microsecond = nowtime.microsecond
 
         valid_regex = False
@@ -56,7 +57,7 @@ class RemindMe(commands.Cog):
                     await context.send("I can't ping you in the past.")
 
             elif self.regexes(time) == 5 and (str(args[0]).startswith("+")):
-                set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, 0, _Microsecond) + timedelta(minutes=int(time))
+                set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, _Second, _Microsecond) + timedelta(minutes=int(time))
                 message_to_send = ' '.join(args)
                 message_to_send = message_to_send[1:]  # cuts the "+"
                 valid_regex = True
@@ -239,7 +240,7 @@ def setup(bot):
     bot.add_cog(RemindMe(bot))
 
 
-@dataclass()
+@dataclass(eq=True,frozen=True)
 class Record:
 
     channelID: int
@@ -255,10 +256,6 @@ class Record:
     def __lt__(self, other):
         if isinstance(other, Record):
             return self.date < other.date
-
-    def __eq__(self, other):
-        if isinstance(other, Record):
-            return self.date == other.date
 
     def __ne__(self, other):
         if isinstance(other, Record):

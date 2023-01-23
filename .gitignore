@@ -3,6 +3,7 @@
 __pycache__
 lib/bot/token.0
 token.0
+proba.py
 QuartRoutes/for_the_api.py
 QuartRoutes/for_the_gui.py
 QuartRoutes/quart_routes.py
@@ -12,6 +13,7 @@ Files/reminders.txt
 Files/profpic.png
 Files/globalsForTheDatabase.txt
 Files/globalsDefaultValueImport.txt
+Files/huntmmr.txt
 database_mongo/db_con__with_other_battabot
 cogs/random.py
 backup_depr

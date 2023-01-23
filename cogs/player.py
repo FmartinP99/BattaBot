@@ -96,13 +96,14 @@ class Player(commands.Cog):
 
         channel = context.author.voice.channel
         try:
+
             if voice and voice.is_connected():
                 await voice.move_to(channel)
             else:
                 await channel.connect()
             get(self.bot.voice_clients, guild=context.guild)
         except Exception:
-            context.send("Couldn't join to the voice channel!!")
+            await context.send("Couldn't join to the voice channel!!")
 
     def search(self, arg):
 

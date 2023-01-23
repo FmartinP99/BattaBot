@@ -20,9 +20,11 @@ def get_data(server_id, query_month_or_day_length=None):
     else:
 
         try:
-            query_month_or_day_length = min(int(query_month_or_day_length), 366)
-            messages = collection_messages.find({"_id": {"$regex": f"^MessageObject.*?{server_id}"}},
-                                       {"_id": 0, "Date": 1, "Users": 1}).sort('Date', -1).limit(query_month_or_day_length)
+            now = datetime.now()
+            query_month_or_day_length = min(int(query_month_or_day_length), 365)
+            query_time_beginning = datetime(year=now.year, month=now.month, day=now.day, hour=0, minute=0, microsecond=0) - timedelta(days=query_month_or_day_length)
+            messages = collection_messages.find({"_id": {"$regex": f"^MessageObject.*?{server_id}"}, "Date": {"$gte": query_time_beginning}},
+                                       {"_id": 0, "Date": 1, "Users": 1}).sort('Date', -1)
 
             make_list(users, messages, month_length=0, addition=f"Last {query_month_or_day_length} days")
 
@@ -83,7 +85,10 @@ def make_list(users, messages, month_length, addition):
             index = 0
             for user in userList:
                 if user == key2:
-                    msglist[index].append(value2)
+                    if value2 > 0:
+                        msglist[index].append(value2)
+                    else:
+                        msglist[index].append(None)
                 index += 1
 
     plot(userList, msglist, dateList, addition)
@@ -103,6 +108,7 @@ def plot(user_list, msg_list, date_list, addition):
     index = 0
     while index < len(user_list):
         plt.plot(date_list, msg_list[index], marker='o', label=f"{user_list[index]}", linewidth=3)
+        print(msg_list[index])
         index += 1
 
     plt.title(f"Messages Sent Daily\n( {addition} )")
