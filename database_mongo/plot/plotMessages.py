@@ -108,7 +108,6 @@ def plot(user_list, msg_list, date_list, addition):
     index = 0
     while index < len(user_list):
         plt.plot(date_list, msg_list[index], marker='o', label=f"{user_list[index]}", linewidth=3)
-        print(msg_list[index])
         index += 1
 
     plt.title(f"Messages Sent Daily\n( {addition} )")
