@@ -1,6 +1,6 @@
 from discord.ext import commands
 from database_mongo import connect
-from database_mongo.plot import plotMessages, plotPoints
+from database_mongo.plot import plotMessages
 import discord
 import sys
 from botMain import prefix
@@ -96,15 +96,7 @@ class DatabaseHandler(commands.Cog):
                 await context.send("Wrong keyword!")
 
 
-    @commands.command()
-    async def db_points(self, context):
-        server_id = context.message.guild.id
-        try:
-            plotPoints.getPoints(server_id)
 
-            await context.send(file=discord.File("Files/points.png"))
-        except Exception:
-            print(sys.exc_info())
 
 
     @commands.command()
