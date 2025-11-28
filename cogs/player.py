@@ -185,7 +185,6 @@ class Player(commands.Cog):
             else:
                 await channel.connect(timeout=10, reconnect=True)
         except Exception as e:
-            print("join error")
             print(e)
             print(type(e))
             print("Couldn't join to the voice channel!! "  + channel.name)
@@ -199,8 +198,6 @@ class Player(commands.Cog):
     def play_music(self, guildId: int, newIndex: int, uuid: uuid.UUID):
 
         guild = self.get_guild_by_id(guildId)
-
-        print("play music called with index: " + str(newIndex))
 
         if guild is None:
             print("Play Music guild was none")
