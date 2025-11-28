@@ -6,7 +6,7 @@ import asyncio
 import re
 import os
 import sys
-
+from discord.ext import tasks
 
 class RemindMe(commands.Cog):
     def __init__(self, bot):
@@ -14,7 +14,7 @@ class RemindMe(commands.Cog):
         
     separator = "|!!|"
 
-    @commands.command()
+    @commands.command(aliases=['rm'])
     async def remindme(self, context, time, *args):
         nowtime = datetime.now()
         _Year = nowtime.year
@@ -113,16 +113,26 @@ class RemindMe(commands.Cog):
             if valid_regex is True:
                 sleepTimer = (set_time - nowtime).total_seconds()
                 await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
-                await self.remindme_writefile(context, set_time, message_to_send)
+                await self.remindme_writefile(context.message.channel.id, context.message.author.id, set_time, message_to_send)
                 await asyncio.sleep(sleepTimer)
-                await self.ping_bot(context, message_to_send, context.message.author.id)
+                await self.ping_bot(context.message.guild.id, context.message.channel.id, message_to_send, context.message.author.id)
 
-    async def ping_bot(self, context, msg, author):
+    async def ping_bot(self, serverId, channelId, msg, author):
+
+        guild = self.bot.get_guild(serverId)
+        if not guild:
+            print(f"Guild {serverId} not found")
+            return
+
+        channel = guild.get_channel(channelId) # to-do: megnézni hogy text type-e a channel
+        if not channel:
+            print(f"Channel {channelId} not found")
+            return
 
         if msg != "":
-            await context.send(f"<@{author}>\n{str(msg)}")
+            await channel.send(f"<@{author}>\n{str(msg)}")
         else:
-            await context.send(context.author.mention)
+            await channel.send(f"<@{author}>")
 
     def regexes(self, time):
 
@@ -139,15 +149,14 @@ class RemindMe(commands.Cog):
         else:
             return False
 
-    async def remindme_writefile(self, context, time, *args):
+    async def remindme_writefile(self, channelId, authorId, time, *args):
         message = " ".join(args)
 
         with open('Files/reminders.txt', 'a', encoding='utf-8', newline='\n') as f:
             f.write(
-                f"{context.message.channel.id}{self.separator}{context.message.author.id}{self.separator}{time}{self.separator}{message}{self.separator}\n")
+                f"{channelId}{self.separator}{authorId}{self.separator}{time}{self.separator}{message}{self.separator}\n")
 
     async def remindme_checkfile(self):
-
         if os.stat('Files/reminders.txt').st_size != 0:
             with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as f:
                 if f:
@@ -156,6 +165,7 @@ class RemindMe(commands.Cog):
                         try:
                             currentline = line.split(f"{self.separator}")
                             sentTime = currentline[2]
+                            msg = currentline[3]
 
                             _year = int(sentTime[0:4])
                             _month = int(sentTime[5:7])
@@ -169,7 +179,7 @@ class RemindMe(commands.Cog):
                             if (getTime - datetime.now()).total_seconds() > 0:
                                 record_array.append(Record(int(currentline[0]), int(currentline[1]), getTime, currentline[3]))
                             else:
-                                print(f"This is the past! {getTime}")
+                                print(f"This is the past! {getTime} - {msg}")
                         except Exception:
                             print("An error occurred during the reading of the file. Maybe empty?")
                             sys.exc_info()
@@ -209,7 +219,8 @@ class RemindMe(commands.Cog):
             getTime = datetime(_year, _month, _day, _hour, _minute)
             sleepTimer = (getTime - datetime.now()).total_seconds()
 
-            await self.auto_mention(sleepTimer, channelid, sentMessage, author)
+            asyncio.create_task(self.auto_mention(sleepTimer, channelid, sentMessage, author))
+
 
     async def auto_mention(self, sleepTimer, channelid, sentMessage, author):
 
@@ -236,8 +247,8 @@ class RemindMe(commands.Cog):
         print(error)
 
 
-def setup(bot):
-    bot.add_cog(RemindMe(bot))
+async def setup(bot):
+    await bot.add_cog(RemindMe(bot))
 
 
 @dataclass(eq=True,frozen=True)

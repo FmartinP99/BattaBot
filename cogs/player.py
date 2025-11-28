@@ -1,404 +1,537 @@
-import threading
-import discord
-from youtube_dl import YoutubeDL
-from discord.ext import commands
-from requests import get as get_requests
-from discord.utils import get as get
-from discord import FFmpegPCMAudio
-import os
-from random import choice
-from botMain import check_owner, IS_BOT_READY
-from globals import g_cover, g_localMediaPlayerFolderPath, g_ffmpeg, g_botid
 import asyncio
+from dataclasses import dataclass, field
+import random
 from typing import Optional
-import sys
-from enum import Enum, auto
-from discord.errors import ClientException
+from mutagen.mp3 import MP3
+from mutagen.id3 import ID3
+import os
+from globals import g_cover, g_localMediaPlayerFolderPath, g_ffmpeg, g_botid
+from discord.ext import commands
+from botMain import check_owner, IS_BOT_READY
+import discord
+from discord.utils import get as get
+import uuid
+import time
+#import logging
+#logging.basicConfig(level=logging.DEBUG)
 
+FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+                           'options': '-vn'}
 
-class PlayMusicEnums(Enum):
-    """Enums for play_music function"""
+@dataclass(frozen=False)
+class Music:
+    index: int
+    title: str
+    artist: str
+    lengthStr: str
+    length: int
+    filename: str
 
-    SKIP = auto()
-    PREV = auto()
+@dataclass(frozen=False)
+class Playing:
+    isPlaying: bool = False
+    music: Optional[Music] = None
+    modified_at: float = field(default_factory=lambda: time.time(), init=False)
+
+    def __setattr__(self, name, value):
+        # normal field update
+        super().__setattr__(name, value)
+        # whenever we update the music, the modified_at also changes.
+        if name == "music":
+            super().__setattr__("modified_at", time.time())
+
 
 
 class PlayerAttributes:
-    """Class contains flags and a few function, for MediaPlayer"""
 
     def __init__(self):
 
-        self.play = False  # checks if <play> has been called, to not throw an error
-        self.play_er = False
-        self.stop_Var = False  # checks if <stop> has been called, to not throw an error
+        self.mediaplayer_path: str = g_localMediaPlayerFolderPath
+  
+        self.current: Playing = Playing(isPlaying=False)
+        self.musics: dict[int, Music] = {}
+        self.load_songs(True)
 
-        self.g_context = None  # where the bot plays music
-        self.need_update = False  # if <now_playing> has been called, this manages auto_update
-        self.playlistMessage = None  # <now_playing> message. this has to be updated
+        self.now_playing_guid: Optional[uuid.UUID] = None # so that only the correct play_music callback loop is executed, the other(s) terminate
+        self.playlistMessage: Optional[discord.Message] = None
 
-        self.threadMP = threading.Thread()
 
-        self.song_dict = dict()
-        self.mediaplayer_path = g_localMediaPlayerFolderPath  # change this if you want to play from somewhere else
-        self.song_var = os.listdir(self.mediaplayer_path)
-        self.song_to_play_index = 1  # which song to play
-        self.load_songs()
-        self.shuffle()
-
-    def load_songs(self):
-
+    def load_songs(self, shuffle:bool=False ):
         index = 0
-        while len(self.song_var) > 0:
-            if not self.song_var[0].endswith('.jpg'):
-                self.song_dict[index + 1] = f"{self.song_var[0]}"
-                del self.song_var[0]
-                index += 1
-            else:
-                del self.song_var[0]
+
+        self.musics = {}
+
+        songpaths = os.listdir(self.mediaplayer_path)
+        if shuffle:
+            random.shuffle(songpaths)
+
+        while len(songpaths) > 0:
+            file_path = songpaths.pop(0)
+
+            if not isinstance(file_path, str):
+                print("Skipping invalid file:", file_path)
+                continue
+
+            if file_path.lower().endswith(".jpg"):
+                print("Skipping image:", file_path)
+                continue
+
+            if not file_path.lower().endswith(".mp3"):
+                print("Not mp3 audio. Skipping.")
+                continue
+
+
+            try:
+                audio = MP3(os.path.join(self.mediaplayer_path, file_path), ID3=ID3)
+                artist_tag = audio.tags.get("TPE1") if audio.tags else None
+                title_tag = audio.tags.get("TIT2") if audio.tags else None
+
+                artist = artist_tag.text[0] if artist_tag else ""
+                title = title_tag.text[0] if title_tag else ""
+
+                # if metadata is wrong we try to guess it 
+                if title == "":
+                    splitted = file_path[:-4].split(" - ", 1)
+                    if len(splitted) == 1:
+                        title = splitted[0]
+                        artist = ""
+                    else:
+                        artist = splitted[0]
+                        title = splitted[1] 
+
+                length_seconds = int(audio.info.length) if audio.info.length else 0
+                minutes = length_seconds // 60
+                seconds = length_seconds % 60
+                length_str = f"{minutes:02d}:{seconds:02d}"
+            
+
+            except Exception as e:
+                # if metadata is wrong we try to guess it
+                splitted = file_path[:-4].split(" - ", 1)
+                if len(splitted) == 1:
+                        title = splitted[0]
+                        artist = ""
+                else:
+                    artist = splitted[0]
+                    title = splitted[1] 
+                length_str = "00:00"
+          
+            music_obj = Music(
+                index = index + 1,
+                title=title,
+                artist=artist,
+                lengthStr=length_str,
+                length=length_seconds,
+                filename=file_path
+            )
+
+            self.musics[index + 1] = music_obj
+            index += 1            
+
+        self.current.music = self.musics[1]
+        print("Songs shuffled") if shuffle else print("Songs loaded.")
 
     def shuffle(self):
+        self.load_songs(True)
 
-        self.song_var = self.song_dict
-        self.song_dict = dict()
-        self.song_to_play_index = 1
-
-        index = 1
-        while len(self.song_var) > 0:
-            randomkey = choice(list(self.song_var.keys()))
-            if not self.song_var[randomkey].endswith('.jpg'):
-                self.song_dict[index] = f"{self.song_var[randomkey]}"
-                del self.song_var[randomkey]
-                index += 1
-            else:
-                del self.song_var[randomkey]
-
-    def get_song_dict(self):
-
-        return self.song_dict
+    def get_song_dict(self) -> dict[int, Music]:
+        return self.musics
+    
+    def get_song(self, index: int) -> Optional[Music]:
+        return self.musics.get(index)
+    
+    def get_current_song_inferred_title(self) -> str:
+        return self.get_song_inferred_title(self.current.music)
+    
+    def get_song_inferred_title(self, music: Music) -> str:
+        title = music.artist + " - " + music.title if len(music.artist) > 0 else music.title 
+        return title
+    
 
 
 class Player(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.g_cover = g_cover
-        self.mediaBots = {}
+        self.cover = g_cover
+        self.mediaBots: dict[int, PlayerAttributes] = {}
 
-        if IS_BOT_READY and not self.mediaBots:
+        if IS_BOT_READY and len(self.mediaBots) == 0:
             for guild in self.bot.guilds:
                 self.mediaBots[guild.id] = PlayerAttributes()
+    
+    def get_song_dict(self, serverId: int):
+        return self.mediaBots[serverId].get_song_dict()
+    
+    async def join(self, channelId: int, guildId: int):
 
-    def get_song_dict(self, server_id):
+        await self.bot.wait_until_ready()
 
-        return self.mediaBots[server_id].get_song_dict()
+        channel = self.bot.get_channel(channelId)
+        if channel is None:
+            print("Channel is not found while trying to join.")
+            return
+        
+        guild = self.bot.get_guild(guildId)
+        if guild is None:
+            print("Server is not found while trying to join.")
+            return
+        
+        voice = self.get_voice_client(guild)
 
-    async def join(self, context, voice):
-
-        channel = context.author.voice.channel
         try:
-
             if voice and voice.is_connected():
                 await voice.move_to(channel)
             else:
-                await channel.connect()
-            get(self.bot.voice_clients, guild=context.guild)
-        except Exception:
-            await context.send("Couldn't join to the voice channel!!")
+                await channel.connect(timeout=10, reconnect=True)
+        except Exception as e:
+            print("join error")
+            print(e)
+            print(type(e))
+            print("Couldn't join to the voice channel!! "  + channel.name)
 
-    def search(self, arg):
 
-        with YoutubeDL({'format': 'bestaudio', 'noplaylist': 'True'}) as ydl:
-            try:
-                get_requests(arg)
-            except Exception:
-                info = ydl.extract_info(f"ytsearch:{arg}", download=False)['entries'][0]
-            else:
-                info = ydl.extract_info(arg, download=False)
-        return (info, info['formats'][0]['url'])
+    # yt functions
+    # search function will not be implemented right now
+    # same for play functionality
+
+
+    def play_music(self, guildId: int, newIndex: int, uuid: uuid.UUID):
+
+        guild = self.get_guild_by_id(guildId)
+
+        print("play music called with index: " + str(newIndex))
+
+        if guild is None:
+            print("Play Music guild was none")
+            return
+
+        mediaBot = self.mediaBots[guildId]
+
+        if uuid != mediaBot.now_playing_guid:
+            return
+
+        if mediaBot is None:
+            print("Play Music media bot does not exists.")
+            return
+
+        voice = self.get_voice_client(guild)
+
+        if voice is None:
+            print("Play Music voice does not exists.")
+            return
+        
+        if not voice.is_connected():
+            print("Play music voice is not connected")
+            return
+        
+        
+        maxIndex = len(mediaBot.get_song_dict())
+        newIndex = maxIndex if newIndex < 1 else 1 if newIndex > maxIndex else newIndex
+        newSong = mediaBot.get_song(newIndex)
+        if newSong is None:
+            print("Play Music The new song does not exists. Index: " + str(newIndex))
+            return
+        
+        mediaBot.current.music = newSong
+        mediaBot.current.isPlaying = True
+
+        def after_play(error):
+            if error:
+                print("Error playing:", error)
+            if voice and voice.is_connected():
+                next_index = newIndex + 1
+                if next_index > maxIndex:
+                    next_index = 1 
+
+                self.play_music(guildId, next_index, uuid)
+        
+        mediaBot.after_play_ref = after_play
+
+        try:
+            if mediaBot.playlistMessage:
+                self.bot.loop.create_task(
+                    self.playlist_update(
+                        mediaBot.playlistMessage.id, 
+                        guildId, 
+                        mediaBot.playlistMessage.channel.id
+                    )
+                )
+
+            voice.play(discord.FFmpegOpusAudio(executable=f"{g_ffmpeg}",
+                                                source=f"{mediaBot.mediaplayer_path}/{mediaBot.musics[mediaBot.current.music.index].filename}", bitrate=320),
+                        after=mediaBot.after_play_ref)
+            
+        except Exception as e:
+            print(e)
+            print("Now Playing Error while FFMPEG playing in channel.")
+        
+
+    @commands.command(aliases=['er', 'ER'])
+    async def playmusic(self, context: commands.Context):
+        mediaBot = self.mediaBots[context.guild.id]
+        try:
+            await self.join(context.author.voice.channel.id, context.guild.id)
+            new_guid = uuid.uuid4()
+            mediaBot.now_playing_guid = new_guid
+            self.play_music(context.guild.id, mediaBot.current.music.index, new_guid)
+        except Exception as e:
+            print(e)
+            mediaBot.current.isPlaying = False
+            await context.send("You are not in a voice channel!")
+
 
     @commands.command()
-    async def play(self, context, *, query):
+    async def stop(self, context: commands.Context):
+        mediaBot = self.mediaBots[context.guild.id]
+        voice = self.get_voice_client(context.guild)
+        if voice is None:
+            print("Voice was none so the 'stop' command did not do anything.")
+            return
 
+        if voice and voice.is_connected():
+            if mediaBot.current.music.index > 1:
+                newSong = mediaBot.get_song(mediaBot.current.music.index - 1)
+                mediaBot.current.music = newSong
+            
+            self.stop_sound(mediaBot, voice)
+
+        await voice.disconnect()
+
+        if mediaBot.playlistMessage is not None:
+                msg = await mediaBot.playlistMessage.channel.fetch_message(mediaBot.playlistMessage.id)
+                await msg.delete()
+                mediaBot.playlistMessage = None
+
+
+    @commands.command()
+    async def skip(self, context: commands.Context, value: int=0):
+
+        if not isinstance(value, int):
+            await context.send("The index must be an integer value.")
+            return
+        
+        #default, we skip forwards 1 
+        if value == 0:
+            mediaBot = self.mediaBots[context.guild.id]
+            if mediaBot is None:
+                print("Skip mediabot was None")
+                return
+            value = mediaBot.current.music.index + 1
+        
+        self.skip_to(context.guild.id, context.channel.id, value)
+
+    
+    def skip_to(self, guildId: int, channelId: int, value: int):
+
+        guild = self.get_guild_by_id(guildId)
+        if guild is None:
+            print("Skip To guild is None " + guildId)
+            return
+        
+        channel = self.get_channel_by_id(channelId)
+        if channel is None:
+            print("Skip to channel is None " + channelId)
+            return
+        
+        mediaBot = self.mediaBots[guildId]
+        voice = self.get_voice_client(guild)
+
+        self.stop_sound(mediaBot, voice)
+
+        new_guid = uuid.uuid4()
+        mediaBot.now_playing_guid = new_guid
+
+        self.play_music(guildId, value, new_guid)
+
+
+    @commands.command()
+    async def prev(self, context: commands.Context):
         mediaBot = self.mediaBots[context.guild.id]
 
-        if context.author.voice is not None:
-
-            mediaBot.play = True
-
-            FFMPEG_OPTS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-                           'options': '-vn'}
-
-            video, source = self.search(query)
-            voice = get(self.bot.voice_clients, guild=context.guild)
-            await self.join(context, voice)
-            voice = get(self.bot.voice_clients, guild=context.guild)
-            if voice.is_playing():
-                voice.stop()
-
-            try:
-                if not mediaBot.threadMP.is_alive():
-                    mediaBot.threadMP.join()
-            except Exception:
-                print("Couldn't close thread in <play>")
+        prevIdx = mediaBot.current.music.index - 1
+        self.skip_to(context.guild.id, context.channel.id, prevIdx)
 
 
-            mediaBot.play_er = False
-            voice.play(FFmpegPCMAudio(source, **FFMPEG_OPTS), after=lambda e: print('done', e))
-            voice.is_playing()
-            self.mediaBots[context.guild.id] = mediaBot
-        else:
-            await context.send("You are not in a voice channel!")
-
-    def play_music(self, vc, context, optional_play_music_enum: PlayMusicEnums = None):
+    @commands.command()
+    async def shuffle(self, context: commands.Context):
 
         mediaBot = self.mediaBots[context.guild.id]
+        if mediaBot is None:
+            print("Shuffle mediabot was None")
+            return
+        mediaBot.shuffle()
+        voice = self.get_voice_client(context.guild)
+        self.stop_sound(mediaBot, voice)
 
-        if optional_play_music_enum == PlayMusicEnums.SKIP or mediaBot.play is True:
-            vc.stop()
-            mediaBot.play = False
+        new_guid = uuid.uuid4()
+        mediaBot.now_playing_guid = new_guid
+        self.play_music(context.guild.id, 1, new_guid)
 
-        if optional_play_music_enum == PlayMusicEnums.PREV:
-            vc.stop()
-            mediaBot.song_to_play_index -= 2
-            if mediaBot.song_to_play_index < 1:
-                mediaBot.song_to_play_index = 1
+    # MSG things
 
-            mediaBot.play = False
-
-        if mediaBot.stop_Var is False:
-
-            try:
-                mediaBot.play_er = True
-                vc.play(discord.FFmpegOpusAudio(executable=f"{g_ffmpeg}",
-                                               source=f"{mediaBot.mediaplayer_path}/{mediaBot.song_dict[mediaBot.song_to_play_index]}", bitrate=320),
-                        after=lambda e: self.play_music(vc, context))
-                print(f"{mediaBot.song_to_play_index} - {mediaBot.song_dict[mediaBot.song_to_play_index]}")
-
-                mediaBot.song_to_play_index += 1
-                mediaBot.need_update = True
-
-                if mediaBot.song_to_play_index > len(mediaBot.song_dict):
-                    mediaBot.song_to_play_index = 1
-            except ClientException:
-                pass
-
-        self.mediaBots[context.guild.id] = mediaBot
-
-    @commands.command(pass_context=True, aliases=['er', 'ER'])
-    async def playmusic(self, context):
-
-        mediaBot = self.mediaBots[context.guild.id]
-
-        voice = get(self.bot.voice_clients, guild=context.guild)
-        try:
-            await self.join(context, voice)
-            voice = get(self.bot.voice_clients, guild=context.guild)
-            if voice.is_playing():
-                voice.stop()
-            mediaBot.threadMP = threading.Thread(target=self.play_music, args=(voice, context,))
-            mediaBot.threadMP.start()
-        except Exception:
-            await context.send("You are not in a voice channel!")
 
     @commands.command(aliases=['np'])
-    async def now_playing(self, context):
+    async def now_playing(self, context: commands.Context):
 
         mediaBot = self.mediaBots[context.guild.id]
 
         if mediaBot.playlistMessage is not None:
-            msg = await mediaBot.g_context.fetch_message(mediaBot.playlistMessage.id)
-            await msg.delete()
+            msg = await context.channel.fetch_message(mediaBot.playlistMessage.id)
+            if msg:
+                await msg.delete()
 
-        voice = get(self.bot.voice_clients, guild=context.guild)
+        voice = self.get_voice_client(context.guild)
 
         try:
-            if voice.is_playing() and voice.is_connected():
-                if not mediaBot.play:
-                    file = discord.File(self.g_cover, filename="cover.jpg")
+            if voice and  voice.is_playing() and voice.is_connected():
+                if mediaBot.current.isPlaying:
+
+                    song_name = mediaBot.get_current_song_inferred_title()
+
+                    file = discord.File(self.cover, filename="cover.jpg")
                     em = discord.Embed(title='Now playing:',
-                                       description=f"{mediaBot.song_dict[mediaBot.song_to_play_index - 1][:-4]}",
+                                       description=song_name,
                                        color=0x71368a)
                     em.set_thumbnail(url="attachment://cover.jpg")
-                    em.set_footer(text=f"Made by:\nTReKeSS#3943")
+                    em.set_footer(text=f"Made by:\nTReKeSS")
 
                     mediaBot.playlistMessage = await context.send(file=file, embed=em)
-                    mediaBot.g_context = context
                     await mediaBot.playlistMessage.add_reaction('\U00002B05')
                     await mediaBot.playlistMessage.add_reaction('\U000023F9')
                     await mediaBot.playlistMessage.add_reaction('\U000027A1')
-                    await self.check_update(context.guild.id)
                 else:
-                    await context.send(f"There is no quality music playing.")
+                    await context.send(f"There is no music playing.")
 
-        except Exception:
-            print(sys.exc_info())
-            await context.send("You are either not in a voice channel, or there is no quality music playing.")
+        except Exception as e:
+            print(e)
+            await context.send("You are either not in a voice channel, or there is no music playing.")
 
-        finally:
-            self.mediaBots[context.guild.id] = mediaBot
 
-    @commands.command(pass_context=True)
-    async def stop(self, context):
+    @commands.Cog.listener("on_reaction_add")
+    async def listenReactionPlayer(self, reaction: discord.Reaction, user: discord.User):
 
-        mediaBot = self.mediaBots[context.guild.id]
-        voice = get(self.bot.voice_clients, guild=context.guild)
+        right_arrow = '\U000027A1'
+        left_arrow = '\U00002B05'
+        stop_button = '\U000023F9'
 
-        if voice and voice.is_connected():
-            if mediaBot.song_to_play_index > 1:
-                mediaBot.song_to_play_index -= 1
-            mediaBot.stop_Var = True
-            mediaBot.play = False
-            voice.stop()
-            await voice.disconnect()
-            if mediaBot.playlistMessage is not None:
-                msg = await mediaBot.g_context.fetch_message(mediaBot.playlistMessage.id)
-                await msg.delete()
-                mediaBot.playlistMessage = None
+        mediaBot = self.mediaBots[reaction.message.guild.id]
+
+        if mediaBot.playlistMessage.id != reaction.message.id:
+            return
+        
+        if user.id != g_botid:
             try:
-                mediaBot.threadMP.join()
-            except Exception:
-                print("couldnt close thread")
-                print(sys.exc_info())
-            finally:
-                mediaBot.stop_Var = False
-                self.mediaBots[context.guild.id] = mediaBot
+                context = await self.bot.get_context(reaction.message)
 
-        else:
-            await context.send("Can't leave.")
+                if reaction.emoji == right_arrow:
+                    await self.skip(context)
+                    await self.playlist_update(mediaBot.playlistMessage.id,
+                                               reaction.message.guild.id,
+                                               reaction.message.channel.id)
+                    await reaction.message.remove_reaction(reaction.emoji, user)
 
-    @commands.command(pass_context=True)
-    async def skip(self, context, value=0, called_with_command=True):
+                elif reaction.emoji == left_arrow:
+                    await self.prev(context)
+                    await self.playlist_update(mediaBot.playlistMessage.id,
+                                               reaction.message.guild.id,
+                                               reaction.message.channel.id)
+                    await reaction.message.remove_reaction(reaction.emoji, user)
 
-        mediaBot = self.mediaBots[context.guild.id]
+                elif reaction.emoji == stop_button:
+                    await self.stop(context)
+                    await reaction.message.delete()
 
-        try:
-            if isinstance(value, int):
-                if 0 <= value <= len(mediaBot.song_dict):
-                    if value != 0:
-                        mediaBot.song_to_play_index = value
-                    voice = get(self.bot.voice_clients, guild=context.guild)
-                    if called_with_command:
-                        msg = await context.fetch_message(context.message.id)
-                        await msg.delete()
-                    self.play_music(voice, context, optional_play_music_enum=PlayMusicEnums.SKIP)
+            except AttributeError:
+                pass
 
-                else:
-                    await context.send("Out of index!")
-            else:
-                await context.send("I can only skip to decimal numbers!")
+            except Exception as e:
+                print(e)
 
-        except Exception:
-            print("There is something wrong with skipping!!")
-            print(sys.exc_info())
 
-        finally:
-            self.mediaBots[context.guild.id] = mediaBot
 
-    @commands.command(pass_context=True)
-    async def prev(self, context):
+    async def playlist_update(self, messageId: int, guildId: int, channelId: int):
 
-        try:
-            voice = get(self.bot.voice_clients, guild=context.guild)
-            self.play_music(voice, context, optional_play_music_enum=PlayMusicEnums.PREV)
-        except Exception:
-            print("There is something wrong with going back!")
-            print(sys.exc_info())
+        channel = self.bot.get_channel(channelId)
+        if channel is None:
+            print("Channel is not found in playlist update.")
+            return
+        
+        guild = self.bot.get_guild(guildId)
+        if guild is None:
+            print("Server is not found in playlist update.")
+            return
 
-    @commands.command(pass_context=True, aliases=['ers', 'er_Search'])
-    async def lp_search(self, context, *, name=""):
+        mediaBot = self.mediaBots[guildId]
+        songTitle = mediaBot.get_current_song_inferred_title()
+        em = discord.Embed(title='Now playing:',
+                           description=songTitle,
+                           color=0x71368a)
+        em.set_thumbnail(url="attachment://cover.jpg")
+        em.set_footer(text=f"Made by:\nTReKeSS#3943")
+        msg = await channel.fetch_message(messageId)
+        if msg:
+            await msg.edit(embed=em)
 
-        mediaBot = self.mediaBots[context.guild.id]
 
-        if name != "":
-            try:
-                if mediaBot.play is False and mediaBot.play_er is True:
-                    searched_music_values = []
-
-                    for song in mediaBot.song_dict.values():
-                        if name.lower() in song.lower():
-                            searched_music_values.append(song)
-
-                    if searched_music_values:
-                        searched_index = 1
-
-                        while searched_index < len(mediaBot.song_dict):
-                            if searched_music_values[0] == mediaBot.song_dict[searched_index]:
-                                mediaBot.song_to_play_index = searched_index
-                                get(self.bot.voice_clients, guild=context.guild).stop()
-                                mediaBot.need_update = True
-                                break
-                            else:
-                                searched_index += 1
-                    else:
-                        await context.send(f"Could not find it : {name}")
-                else:
-                    await context.send(
-                        "Cannot search, because,you are either not in a voice channel,"
-                        " or there is no quality music playing.")
-            except Exception:
-                print(sys.exc_info())
-
-            finally:
-                self.mediaBots[context.guild.id] = mediaBot
-        else:
-            await context.send("Did not provide what to search for.")
-
-        await asyncio.sleep(8)
-        msg = await context.fetch_message(context.message.id)
-        await msg.delete()
-
-    @commands.command(pass_context=True, aliases=['ersl'])
-    async def lp_searchlist(self, context, *, search=""):
+    @commands.command()
+    async def lp_searchlist(self, context: commands.Context, *, searchTerm=""):
 
         mediaBot = self.mediaBots[context.guild.id]
-        name = ""
+        searchedTitle = ""
 
-        if search != "":
-            search = search.split(' ')
-            for word in search:
+        if searchTerm != "":
+            searchTerm = searchTerm.split(' ')
+            for word in searchTerm:
                 if word != "-stay":
-                    name = ''.join(word)
+                    searchedTitle = ''.join(word)
 
             try:
-                if name == '*':
-                    searched_music = list()
-                    for key, value in mediaBot.song_dict.items():
-                        searched_music.append(f"{key} - {value}")
+                songs = mediaBot.get_song_dict()
+                if searchedTitle == '*':
+                    searched_musics: list[str] = list()
+                    for idx, music in songs.items():
+                        searched_musics.append(f"{idx} - {music.title}")
                 else:
-                    searched_music = list()
-                    for key, value in mediaBot.song_dict.items():
-                        if name.lower() in str(value).lower():
-                            searched_music.append(f"{key} - {value}")
+                    searched_musics = list()
+                    for idx, music in songs.items():
+                        song_title = mediaBot.get_song_inferred_title(music)
+                        if searchedTitle.lower() in str(song_title).lower():
+                            searched_musics.append(f"{idx} - {song_title}")
 
-                if not searched_music:
-                    await context.send(f"Couldn't find it.: {name}")
+                if len(searched_musics) == 0:
+                    await context.send(f"Couldn't find it.: {searchedTitle}")
+                    return
 
                 else:
                     index = 1
                     messages = []
+                    max_page_entry = 24
+                    max_page_limit = 8
+                    inline_limit = 18
 
-                    if len(searched_music) > 24 * 8:  # max page entry  *  max pages LIMIT
-                        max_page = 8
+                    if len(searched_musics) > max_page_entry * max_page_limit:  # max page entry  *  max pages LIMIT
+                        max_page = max_page_limit
                     else:
-                        max_page = (len(searched_music) // 24) + 1
+                        max_page = (len(searched_musics) // max_page_entry) + 1
 
-                    while index < len(searched_music) or (index == 1 and len(searched_music) == 1):
-                        file = discord.File(self.g_cover, filename="cover.jpg")
+                    while index < len(searched_musics) or (index == 1 and len(searched_musics) == 1):
+                        file = discord.File(self.cover, filename="cover.jpg")
                         em = discord.Embed(
-                            title=f'Searched results (max: 24 per page.) Max 8 pages.\nPage {(index // 24) + 1}/{max_page}:',
-                            description=f"Searched title: {name}\nMatches: {index}-{index + 23 if index + 23 < len(searched_music) else len(searched_music)} out of {len(searched_music)}",
+                            title=f'Searched results (max: {max_page_entry} per page.) Max {max_page_limit} pages.\nPage {(index // max_page_entry) + 1}/{max_page}:',
+                            description=f"Searched title: {searchedTitle}\nMatches: {index}-{index + (max_page_entry - 1) if index + (max_page_entry - 1) < len(searched_musics) else len(searched_musics)} out of {len(searched_musics)}",
                             color=0x71368a)
                         em.set_thumbnail(url="attachment://cover.jpg")
-                        em.set_footer(text=f"Made by:\nTReKeSS#3943")
+                        em.set_footer(text=f"Made by:\nTReKeSS")
 
-                        for result in searched_music[index - 1:]:
+                        for result in searched_musics[index - 1:]:
 
-                            if len(searched_music) > 18:
-                                em.add_field(name=f'{index}', value=f'{result[:-4]}', inline=True)
+                            if len(searched_musics) > inline_limit:
+                                em.add_field(name=f'{index}', value=f'{result}', inline=True)
                             else:
-                                em.add_field(name=f'{index}', value=f'{result[:-4]}', inline=False)
+                                em.add_field(name=f'{index}', value=f'{result}', inline=False)
 
-                            if index % 24 == 0 or index == len(searched_music):
+                            if index % max_page_entry == 0 or index == len(searched_musics):
                                 msg = await context.send(file=file, embed=em)
                                 index += 1
                                 await asyncio.sleep(5)
@@ -407,141 +540,77 @@ class Player(commands.Cog):
 
                             index += 1
 
-                        if index > 24 * 8:
-                            msg = await context.send(f"I can only show the first {8 * 24} result. (×﹏×)")
+                        if index > max_page_entry * max_page_limit:
+                            msg = await context.send(f"I can only show the first {max_page_entry * max_page_limit} result. (×﹏×)")
                             messages.append(msg)
                             break
 
-                    if search[-1] != "-stay":
+                    if searchTerm[-1] != "-stay":
                         for msg in messages:
                             await asyncio.sleep(7)
                             await msg.delete()
 
                 msg = await context.fetch_message(context.message.id)
                 await msg.delete()
-            except Exception:
-                print(sys.exc_info())
+            except Exception as e:
+                print(e)
 
-            finally:
-                self.mediaBots[context.guild.id] = mediaBot
         else:
             await context.send("Didn't provide what to search for.")
 
-    @commands.command()
-    async def shuffle(self, context):
-
-        mediaBot = self.mediaBots[context.guild.id]
-        mediaBot.shuffle()
-        self.mediaBots[context.guild.id] = mediaBot
-
-    @commands.command(pass_context=True)
+    
     @commands.check(check_owner)
-    async def setpath(self, context, *, path):
+    @commands.command()
+    async def setpath(self, context: commands.Context, *, path):
 
         mediaBot = self.mediaBots[context.guild.id]
-
         path = str(path).replace("\\", "/").lower()
-        print(path)
+        mediaBot.mediaplayer_path = path
+        await self.shuffle(context)
 
-        if "".lower() in path:
-            try:
-                mediaBot.mediaplayer_path = path
-                mediaBot.song_dict = dict()
-                mediaBot.song_var = os.listdir(mediaBot.mediaplayer_path)
-                mediaBot.song_to_play_index = 1
-                mediaBot.load_songs()
-                self.mediaBots[context.guild.id] = mediaBot
 
-                try:
-                    get(self.bot.voice_clients, guild=context.guild).stop()
-                    await self.playmusic(context)
-                except Exception:
-                    await context.send(
-                        "Setpath set, but couldn't query the bot's voice. You are probably not in a voice channel.")
-                    print(sys.exc_info())
-                msg = await context.fetch_message(context.message.id)
-                await msg.delete()
+    # HELPERS
+        
+    def stop_sound(self, mediaBot: PlayerAttributes, voice: discord.VoiceClient):
+        mediaBot.current.isPlaying = False
+        mediaBot.now_playing_guid = None
 
-            except Exception:
-                await context.send("There is something wrong with setting the path!")
-                print(sys.exc_info())
+        if voice and voice.is_playing():
+            voice.stop()
 
-        else:
-            await context.send("No!")
-
-    @commands.Cog.listener("on_reaction_add")
-    async def listenReactionPlayer(self, reaction, user):
-
-        right_arrow = '\U000027A1'
-        left_arrow = '\U00002B05'
-        stop_button = '\U000023F9'
-
-        mediaBot = self.mediaBots[reaction.message.guild.id]
-
-        if user.id != g_botid:
-            try:
-                if reaction.emoji == right_arrow and mediaBot.playlistMessage.id == reaction.message.id:
-                    await self.skip(mediaBot.g_context, called_with_command=False)
-                    await self.playlist_update(mediaBot.playlistMessage.id,
-                                               reaction.message.guild.id, False)
-                    msg = await mediaBot.g_context.fetch_message(mediaBot.playlistMessage.id)
-                    await msg.remove_reaction(reaction, user)
-
-                elif reaction.emoji == left_arrow and mediaBot.playlistMessage.id == reaction.message.id:
-                    await self.prev(mediaBot.g_context)
-                    await self.playlist_update(mediaBot.playlistMessage.id,
-                                               reaction.message.guild.id, False)
-                    msg = await mediaBot.g_context.fetch_message(mediaBot.playlistMessage.id)
-                    await msg.remove_reaction(reaction, user)
-
-                elif reaction.emoji == stop_button and mediaBot.playlistMessage.id == reaction.message.id:
-                    await self.stop(mediaBot.g_context)
-                    msg = await mediaBot.g_context.fetch_message(mediaBot.playlistMessage.id)
-                    await msg.delete()
-
-            except AttributeError:
-                pass
-
-            except Exception:
-                print(sys.exc_info())
-
-            finally:
-                self.mediaBots[reaction.message.guild.id] = mediaBot
-
-    async def check_update(self, contextguildid):
-
-        mediaBot = self.mediaBots[contextguildid]
-
-        while mediaBot.playlistMessage is not None:
-
-            if mediaBot.need_update:
-                await self.playlist_update(mediaBot.playlistMessage.id, contextguildid, True)
-                self.mediaBots[contextguildid] = mediaBot
-            await asyncio.sleep(3)
-
-    async def playlist_update(self, update_message_id, contextguildid, auto_update: Optional[bool]):
-
-        mediaBot = self.mediaBots[contextguildid]
-
-        if auto_update == True:
-            mediaBot.need_update = False
-            self.mediaBots[contextguildid] = mediaBot
-
-        if len(mediaBot.song_dict) != 1:
-            song = mediaBot.song_to_play_index - 1
-        else:
-            song = 1
-
-        em = discord.Embed(title='Now playing:',
-                           description=f"{mediaBot.song_dict[song][:-4]}",
-                           color=0x71368a)
-        em.set_thumbnail(url="attachment://cover.jpg")
-        em.set_footer(text=f"Made by:\nTReKeSS#3943")
-        msg = await mediaBot.g_context.fetch_message(update_message_id)
-        await msg.edit(embed=em)
-
+    def get_channel_by_id(self, channel_id: int) -> Optional[discord.abc.GuildChannel]:
+        channel = self.bot.get_channel(channel_id)
+        if channel is not None:
+            return channel
+        
+            """ 
+       try:
+            return await self.bot.fetch_channel(channel_id)  # API call
+        except discord.NotFound:
+            return None
+            """
+        
+    def get_guild_by_id(self, guild_id: int) -> Optional[discord.Guild]:
+        guild = self.bot.get_guild(guild_id)
+        if guild is not None:
+            return guild
+        return None
+        
+        """
+        try:
+            return await self.bot.fetch_guild(guild_id)
+        except discord.NotFound:
+            return None
+        """
+        
+    def get_voice_client(self, guild) -> Optional[discord.VoiceClient]:
+        voice = get(self.bot.voice_clients, guild=guild)
+        if isinstance(voice, discord.VoiceClient):
+            return voice
+        return None
+        
     @commands.Cog.listener("on_guild_join")
-    async def on_guild_joined(self, guild):
+    async def on_guild_joined(self, guild: discord.Guild):
 
         if guild.id not in self.mediaBots:
             self.mediaBots[guild.id] = PlayerAttributes()
@@ -550,7 +619,8 @@ class Player(commands.Cog):
     async def on_ready(self):
         for guild in self.bot.guilds:
             self.mediaBots[guild.id] = PlayerAttributes()
+        
 
 
-def setup(bot):
-    bot.add_cog(Player(bot))
+async def setup(bot):
+    await bot.add_cog(Player(bot))

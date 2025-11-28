@@ -21,7 +21,7 @@ def get_data(server_id, query_month_or_day_length=None):
 
         try:
             now = datetime.now()
-            query_month_or_day_length = min(int(query_month_or_day_length), 365)
+            query_month_or_day_length = min(int(query_month_or_day_length), 364)
             query_time_beginning = datetime(year=now.year, month=now.month, day=now.day, hour=0, minute=0, microsecond=0) - timedelta(days=query_month_or_day_length)
             messages = collection_messages.find({"_id": {"$regex": f"^MessageObject.*?{server_id}"}, "Date": {"$gte": query_time_beginning}},
                                        {"_id": 0, "Date": 1, "Users": 1}).sort('Date', -1)
@@ -62,7 +62,7 @@ def make_list(users, messages, month_length, addition):
     for message in messages:
         messageList.insert(0, message)
 
-        dateList.insert(0, str(message['Date'])[5:10])
+        dateList.insert(0, str(message['Date'])[5:10] + "|")
 
     for message in messageList:
         for user in userList:
@@ -91,12 +91,18 @@ def make_list(users, messages, month_length, addition):
                         msglist[index].append(None)
                 index += 1
 
+    msglist_temp = msglist
+    for idx, mt in enumerate(msglist_temp):
+        if all(x is None for x in mt):
+            del msglist[idx]
+            del userList[idx]
+
     plot(userList, msglist, dateList, addition)
 
 
 def plot(user_list, msg_list, date_list, addition):
 
-    figure(num=None, figsize=(16 + len(date_list), 9 + len(user_list)), dpi=60, facecolor='lightgrey', edgecolor='k')
+    figure(num=None, figsize=(24 + len(date_list), 9 + len(user_list)), dpi=60, facecolor='lightgrey', edgecolor='k')
     plt.rcParams['figure.facecolor'] = "lightgrey"
     plt.rcParams['axes.facecolor'] = "lightgrey"
     plt.rcParams['lines.color'] = "white"

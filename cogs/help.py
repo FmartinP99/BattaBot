@@ -124,7 +124,7 @@ class HelpCommands(commands.Cog):
                 await helpBot.helpMessageWritten.delete()
 
             helpMsg = helpBot.embedList[helpBot.helpListaIndex]
-            helpMsg.set_thumbnail(url=context.guild.me.avatar_url)
+            helpMsg.set_thumbnail(url=context.guild.me.avatar)
             helpBot.helpMessageWritten = await context.fetch_message(context.message.id)
             helpBot.helpMessage = await context.send(embed=helpMsg)
             for i in range(0, min(len(helpBot.embedList), 10)):
@@ -144,7 +144,7 @@ class HelpCommands(commands.Cog):
 
         helpMsg = helpBot.embedList[helpBot.helpListaIndex]
 
-        helpMsg.set_thumbnail(url=context.guild.me.avatar_url)
+        helpMsg.set_thumbnail(url=context.guild.me.avatar)
         msg = await helpBot.g_context.fetch_message(helpMessageID)
         await msg.edit(embed=helpMsg)
 
@@ -208,7 +208,7 @@ class HelpCommands(commands.Cog):
     async def load(self, context):
         em = discord.Embed(title='Load', description="Loads a module and it's commands.", color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}load <modulename>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -217,7 +217,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='Unload', description="Unloads a module and it's commands.",
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}unload <modulename>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -226,7 +226,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='Reload', description="Reloads a module and it's commands.",
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}reload <modulename>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -236,7 +236,7 @@ class HelpCommands(commands.Cog):
                            description="Searches for an anime via it's name.",
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}mal <anime name>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -246,7 +246,7 @@ class HelpCommands(commands.Cog):
                            description="Searches for an anime via it's picture.",
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}tracemoe <attached_picture or picture_url>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -256,7 +256,7 @@ class HelpCommands(commands.Cog):
                            description="Sets the similarity for the tracemoe command. Higher similarity means more accurate search. Default is 0.80",
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}setsimilarity <value between 0 and 1, default is 0.8>')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -280,7 +280,7 @@ class HelpCommands(commands.Cog):
         em.add_field(name="Syntax", value=f'{prefix}playmusic')
         em.add_field(name="Alisases",
                      value=f'{prefix}er')
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -395,7 +395,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='db_insert',
                            description="Inserts you into the database.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}db_insert')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -406,7 +406,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='db_getme',
                            description="Displays your progression",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}db_getme')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -417,7 +417,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='db_getme',
                            description="Displays the searched user's progression",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}db_get <username>\n{prefix}db_get <username#numbers>.')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -429,11 +429,11 @@ class HelpCommands(commands.Cog):
                            description=f"Draws a chart with the daily sent messages per user.\n"
                                        f"If the user has been inserted with the {prefix}insert command.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}db_activity.  Shows you the last 14 days by default.\n'
-                           f'{prefix}db_activity <number>.  Shows you the last <number> days. Max 366.\n'
-                           f'{prefix}db_activity <month first three letter or full name>. Shows you the given month\'s replies.')
+                           f'{prefix}db_activity <number>.  Shows you the last <number> days. Max 364.\n'
+                           f'{prefix}db_activity <month first three letter or full name>. Shows you the given month\'s messages.')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -442,7 +442,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='db_updateme',
                            description="Updates your name + discriminator.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}db_updateme')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -454,7 +454,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='group_create',
                            description="Create a group.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}group_create <group_name> or {prefix}gc <group_name>')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -465,7 +465,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='group_join',
                            description="Join a group a group.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}group_join <group_name> or {prefix}gj <group_name>')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -476,7 +476,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='group_ping',
                            description="Ping a group.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}group_ping <group_name> or {prefix}gp <group_name>')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -487,7 +487,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='group_ping',
                            description="Lists the groups on a server.",
                            color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.add_field(name="Syntax",
                      value=f'{prefix}group_list <group_name> or {prefix}gl <group_name>')
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
@@ -496,14 +496,14 @@ class HelpCommands(commands.Cog):
     @help.command()
     async def ping(self, context):
         em = discord.Embed(title='Ping', description='Pings the bot!', color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
     @help.command()
     async def status(self, context):
         em = discord.Embed(title='Status', description='Changes the status of the bot. Only the owner can do it!', color=0x71368a)
-        em.set_thumbnail(url=context.guild.me.avatar_url)
+        em.set_thumbnail(url=context.guild.me.avatar)
         em.set_footer(text=f"Made by:\nTReKeSS#3943")
         await context.send(embed=em)
 
@@ -517,5 +517,5 @@ class HelpCommands(commands.Cog):
         for guild in self.bot.guilds:
             self.helpBots[guild.id] = HelpCommandAttributes()
 
-def setup(bot):
-    bot.add_cog(HelpCommands(bot))
+async def setup(bot):
+    await bot.add_cog(HelpCommands(bot))

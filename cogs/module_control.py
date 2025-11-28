@@ -11,7 +11,7 @@ class ModuleControl(commands.Cog):
     @commands.check(check_owner)  # if TRUE it runs if FALSE it won't
     async def load(self, context, extension):
         if extension not in PROTECTED_MODULES_FROM_LOADING and extension not in PROTECTED_MODULES:
-            bot.load_extension(f'cogs.{extension}')
+            await bot.load_extension(f'cogs.{extension}')
             print(f"{extension} LOADED!")
             await context.send(f"{extension} loaded!")
         else:
@@ -21,7 +21,7 @@ class ModuleControl(commands.Cog):
     @commands.check(check_owner)
     async def unload(self, context, extension):
         if extension not in PROTECTED_MODULES and extension not in PROTECTED_MODULES_FROM_LOADING:
-            bot.unload_extension(f'cogs.{extension}')
+            await bot.unload_extension(f'cogs.{extension}')
             print(f"{extension} DELETED!")
             await context.send(f"{extension} unloaded!")
         else:
@@ -31,8 +31,8 @@ class ModuleControl(commands.Cog):
     @commands.check(check_owner)
     async def reload(self, context, extension):
         if extension not in PROTECTED_MODULES_FROM_LOADING:
-            bot.unload_extension(f'cogs.{extension}')
-            bot.load_extension(f'cogs.{extension}')
+            await bot.unload_extension(f'cogs.{extension}')
+            await bot.load_extension(f'cogs.{extension}')
             await context.send(f"{extension} reloaded!")
         else:
             await context.send("This module is protected from reloading!")
@@ -60,5 +60,5 @@ class ModuleControl(commands.Cog):
 
 
 
-def setup(bot):
-    bot.add_cog(ModuleControl(bot))
+async def setup(bot):
+    await bot.add_cog(ModuleControl(bot))

@@ -20,3 +20,6 @@ backup_depr
 database_mongo/plot/plotPoints.py
 ffmpeg
 .idea
+.venv/
+proba.py
+Files/globalsDefaultValueImport.txt

@@ -43,7 +43,7 @@ class DatabaseHandler(commands.Cog):
             em = discord.Embed(title=f'{name}',
                                description=f"Level: {level}\nExp: {xp} out of {level * 1000}",
                                color=context.author.color)
-            em.set_thumbnail(url=context.author.avatar_url)
+            em.set_thumbnail(url=context.author.avatar)
             em.set_footer(text=f"Made by:\nTReKeSS#3943")
             await context.send(embed=em)
         else:
@@ -76,7 +76,7 @@ class DatabaseHandler(commands.Cog):
                 em = discord.Embed(title=f'{username}',
                                    description=f"Level: {level}\nExp: {xp} out of {level * 1000}",
                                    color=member.color)
-                em.set_thumbnail(url=member.avatar_url)
+                em.set_thumbnail(url=member.avatar)
                 em.set_footer(text=f"Made by:\nTReKeSS#3943")
                 await context.send(embed=em)
         except Exception:
@@ -124,5 +124,5 @@ class DatabaseHandler(commands.Cog):
 
 
 
-def setup(bot):
-    bot.add_cog(DatabaseHandler(bot))
+async def setup(bot):
+    await bot.add_cog(DatabaseHandler(bot))

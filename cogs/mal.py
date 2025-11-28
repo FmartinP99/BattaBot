@@ -41,65 +41,42 @@ class MalSearch(commands.Cog):
 
         for i in name_splitted:
             searched_name = searched_name + i + " "
-        searched_name = searched_name.strip().lower()
+        searched_name = searched_name.strip()
+        print(searched_name)
 
         if searched_name != "":
             async with AioJikan() as aio_jikan:
                 if not name.startswith("-manga"):
                     art = "anime"
                     results = await aio_jikan.search(search_type='anime', query=f'{searched_name}')
+                    results2 = await aio_jikan.anime(1535)
+
                 else:
                     art = "manga"
                     results = await aio_jikan.search(search_type='manga', query=f'{searched_name}')
-                result_list = results['results']
-                if result_list:
-                    titles = list()
-                    for index in range(0, len(result_list)):
-                        titles.append(result_list[index]['title'].lower())
-                    searched_title = difflib.get_close_matches(f'{searched_name}', titles, n=1, cutoff=0.90)
-                    try:
-                        index = 0
-                        while index < len(result_list):
-                            if titles[index] == searched_title[0].lower():
-                                # mal_id, url, image_url, title, airing, synopsis,
-                                # type, episodes
-                                #score, end_date, members, rated
-                                em = discord.Embed(title=f"{result_list[index]['title']}\n{result_list[index]['url']}",
-                                                      description=result_list[index]['synopsis'],
-                                                      color=0x71368a)
-                                em.add_field(name='Type', value=result_list[index]['type'])
-                                em.add_field(name='Year', value=result_list[index]['start_date'][0:4])
-                                if art == "anime":
-                                    em.add_field(name='Episodes', value=result_list[index]['episodes'])
-                                    em.add_field(name='Rated', value=result_list[index]['rated'])
-                                    em.add_field(name='Airing', value=result_list[index]['airing'])
-                                else:
-                                    em.add_field(name='Volume', value=f"{result_list[index]['volumes']}")
-                                    em.add_field(name='Chapters', value=f"{result_list[index]['chapters']}")
-                                    em.add_field(name='Members', value=f"{result_list[index]['members']}")
-                                em.add_field(name='Rating', value=result_list[index]['score'])
-                                em.set_thumbnail(url=result_list[index]['image_url'])
-                                em.set_footer(text=f"Made by:\nTReKeSS#3943")
-                                await context.send(embed=em)
-                                break
-                            index += 1
-                    except Exception:
-                        em = discord.Embed(title=f"{result_list[0]['title']}\n{result_list[0]['url']}",
-                                           description=result_list[0]['synopsis'],
-                                           color=0x71368a)
-                        em.add_field(name='Type', value=result_list[0]['type'])
-                        em.add_field(name='Episodes', value=result_list[0]['episodes'])
-                        em.add_field(name='Year', value=result_list[0]['start_date'][0:4])
-                        em.add_field(name='Rating', value=result_list[0]['score'])
-                        em.add_field(name='Rated', value=result_list[0]['rated'])
-                        em.add_field(name='Airing', value=result_list[0]['airing'])
-                        em.set_thumbnail(url=result_list[0]['image_url'])
-                        em.set_footer(text=f"Made by:\nTReKeSS#3943")
-                        await context.send(
-                            f"Could not find a{'n' if art == 'anime' else ''} {art} with a similar enough title, so here's"
-                            f" the first searched result:")
-                        await context.send(embed=em)
-                        print(sys.exc_info())
+                print(results)
+                print(results2)
+                if results["data"]:
+                    result = results["data"][0]
+
+                    em = discord.Embed(title=f"{result['title']}\n{result['url']}",
+                                          description=result['synopsis'],
+                                          color=0x71368a)
+                    em.add_field(name='Type', value=result['type'])
+                    if art == "anime":
+                        em.add_field(name='Year', value=result['aired']['from'][:4])
+                        em.add_field(name='Episodes', value=result['episodes'])
+                        em.add_field(name='Score', value=result['score'])
+                        em.add_field(name='Airing', value=result['airing'])
+                    else:
+                        em.add_field(name='Year', value=result['published']['from'][:4])
+                        em.add_field(name='Volume', value=f"{result['volumes']}")
+                        em.add_field(name='Chapters', value=f"{result['chapters']}")
+                        em.add_field(name='Members', value=f"{result['members']}")
+                    em.add_field(name='Rating', value=result['score'])
+                    em.set_thumbnail(url=result['images']['jpg']['image_url'])
+                    em.set_footer(text=f"Made by:\nTReKeSS#3943")
+                    await context.send(embed=em)
                 else:
                     await context.send("Could not find anything!!")
         else:
@@ -162,7 +139,7 @@ class MalSearch(commands.Cog):
                                        color=0x71368a)
                     for i in range(0, len(malSearchAttributes.titles)):
                         em.add_field(name=f"{i}", value=f"{malSearchAttributes.titles[i]}")
-                    em.set_thumbnail(url=context.guild.me.avatar_url)
+                    em.set_thumbnail(url=context.guild.me.avatar)
                     em.set_footer(text=f"Made by:\nTReKeSS#3943")
                     malSearchAttributes.traceMoeMessage = await context.send(embed=em)
                     malSearchAttributes.context = context
@@ -220,8 +197,8 @@ class MalSearch(commands.Cog):
         for guild in self.bot.guilds:
             self.malSearchAttributes[guild.id] = MalSearchAttributes()
 
-def setup(bot):
-    bot.add_cog(MalSearch(bot))
+async def setup(bot):
+    await bot.add_cog(MalSearch(bot))
 
 
 @dataclass
