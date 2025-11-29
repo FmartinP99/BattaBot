@@ -12,6 +12,7 @@ import discord
 from discord.utils import get as get
 import uuid
 import time
+from websocketManager import ws_manager, WebSocketMessage
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 
@@ -31,14 +32,14 @@ class Music:
 class Playing:
     isPlaying: bool = False
     music: Optional[Music] = None
-    modified_at: float = field(default_factory=lambda: time.time(), init=False)
+    modifiedAt: float = field(default_factory=lambda: time.time(), init=False)
 
     def __setattr__(self, name, value):
         # normal field update
         super().__setattr__(name, value)
-        # whenever we update the music, the modified_at also changes.
+        # whenever we update the music, the modifiedAt also changes.
         if name == "music":
-            super().__setattr__("modified_at", time.time())
+            super().__setattr__("modifiedAt", time.time())
 
 
 
@@ -146,7 +147,6 @@ class PlayerAttributes:
     def get_song_inferred_title(self, music: Music) -> str:
         title = music.artist + " - " + music.title if len(music.artist) > 0 else music.title 
         return title
-    
 
 
 class Player(commands.Cog):
@@ -160,8 +160,11 @@ class Player(commands.Cog):
             for guild in self.bot.guilds:
                 self.mediaBots[guild.id] = PlayerAttributes()
     
-    def get_song_dict(self, serverId: int):
-        return self.mediaBots[serverId].get_song_dict()
+    def get_song_dict(self, serverId: int) -> Optional[dict[int, Music]]:
+        return self.mediaBots[serverId].get_song_dict() if serverId in self.mediaBots else None
+    
+    def get_current_state(self, serverId: int) -> Optional[Playing]:
+         return self.mediaBots[serverId].current if serverId in self.mediaBots else None
     
     async def join(self, channelId: int, guildId: int):
 
@@ -236,6 +239,7 @@ class Player(commands.Cog):
         def after_play(error):
             if error:
                 print("Error playing:", error)
+                return
             if voice and voice.is_connected():
                 next_index = newIndex + 1
                 if next_index > maxIndex:
@@ -254,6 +258,11 @@ class Player(commands.Cog):
                         mediaBot.playlistMessage.channel.id
                     )
                 )
+
+            print("plaY_music called with newIndex: " + str(newIndex))
+           
+            self._send_ws_notification_on_song_change(guildId)
+         
 
             voice.play(discord.FFmpegOpusAudio(executable=f"{g_ffmpeg}",
                                                 source=f"{mediaBot.mediaplayer_path}/{mediaBot.musics[mediaBot.current.music.index].filename}", bitrate=320),
@@ -281,19 +290,7 @@ class Player(commands.Cog):
     @commands.command()
     async def stop(self, context: commands.Context):
         mediaBot = self.mediaBots[context.guild.id]
-        voice = self.get_voice_client(context.guild)
-        if voice is None:
-            print("Voice was none so the 'stop' command did not do anything.")
-            return
-
-        if voice and voice.is_connected():
-            if mediaBot.current.music.index > 1:
-                newSong = mediaBot.get_song(mediaBot.current.music.index - 1)
-                mediaBot.current.music = newSong
-            
-            self.stop_sound(mediaBot, voice)
-
-        await voice.disconnect()
+        await self._stop(context.guild.id)
 
         if mediaBot.playlistMessage is not None:
                 msg = await mediaBot.playlistMessage.channel.fetch_message(mediaBot.playlistMessage.id)
@@ -316,19 +313,14 @@ class Player(commands.Cog):
                 return
             value = mediaBot.current.music.index + 1
         
-        self.skip_to(context.guild.id, context.channel.id, value)
+        self.skip_to(context.guild.id, value)
 
     
-    def skip_to(self, guildId: int, channelId: int, value: int):
+    def skip_to(self, guildId: int,  newIndex: int):
 
         guild = self.get_guild_by_id(guildId)
         if guild is None:
             print("Skip To guild is None " + guildId)
-            return
-        
-        channel = self.get_channel_by_id(channelId)
-        if channel is None:
-            print("Skip to channel is None " + channelId)
             return
         
         mediaBot = self.mediaBots[guildId]
@@ -339,7 +331,7 @@ class Player(commands.Cog):
         new_guid = uuid.uuid4()
         mediaBot.now_playing_guid = new_guid
 
-        self.play_music(guildId, value, new_guid)
+        self.play_music(guildId, newIndex, new_guid)
 
 
     @commands.command()
@@ -347,7 +339,7 @@ class Player(commands.Cog):
         mediaBot = self.mediaBots[context.guild.id]
 
         prevIdx = mediaBot.current.music.index - 1
-        self.skip_to(context.guild.id, context.channel.id, prevIdx)
+        self.skip_to(context.guild.id, prevIdx)
 
 
     @commands.command()
@@ -605,6 +597,8 @@ class Player(commands.Cog):
         if isinstance(voice, discord.VoiceClient):
             return voice
         return None
+
+        
         
     @commands.Cog.listener("on_guild_join")
     async def on_guild_joined(self, guild: discord.Guild):
@@ -616,7 +610,53 @@ class Player(commands.Cog):
     async def on_ready(self):
         for guild in self.bot.guilds:
             self.mediaBots[guild.id] = PlayerAttributes()
+
+    
+    async def _stop(self, guildId: int):
+        guild = self.get_guild_by_id(guildId)
+        if guild is None:
+            print("Guild was None in the 'stop' command.")
+            return
         
+        mediaBot = self.mediaBots[guildId]
+        if mediaBot is None:
+            print("Mediabot was None in the 'stop' command.")
+            return
+        
+        voice = self.get_voice_client(guild)
+        self.stop_sound(mediaBot, voice)
+        if voice is None:
+            print("Voice was None so the 'stop' command did not do anything.")
+            return
+
+        if voice and voice.is_connected():
+            if mediaBot.current.music.index > 1:
+                newSong = mediaBot.get_song(mediaBot.current.music.index - 1)
+                mediaBot.current.music = newSong
+
+        await voice.disconnect()
+
+    ## websocket communication
+    def _send_ws_notification_on_song_change(self, serverId: int):
+
+        try:
+            current_state = self.get_current_state(serverId)
+
+            msgPayload = {
+                "serverId": str(serverId),
+                "playlistState": current_state
+            }
+
+            payload = WebSocketMessage(
+            msgtype="playlistStateUpdate",
+            message=msgPayload,
+        )
+            
+            self.bot.loop.create_task(ws_manager.broadcast(payload))
+        except Exception as e:
+            print("Exception happened!")
+            print(e)
+
 
 
 async def setup(bot):

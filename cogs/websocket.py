@@ -89,8 +89,20 @@ class Websocket(commands.Cog):
             except Exception as e:
                 print(e)
                 return None
-                
+
+        elif msgtype == "playlistSongSkip":
+            try:
+                server_id = int(message["serverId"])
+                song_index = int(message["songIndex"])
+
+                response = await self.skip_song_to(server_id, song_index)
+            except Exception as e:
+                print(e)
+                return None
+                        
         return response
+    
+   
 
     async def getAllServerInformation(self):
         await self.bot.wait_until_ready()
@@ -197,19 +209,16 @@ class Websocket(commands.Cog):
 
         voice = get(self.bot.voice_clients, guild=guild)
 
+        player_cog = self.bot.get_cog("Player")
+        if player_cog is None:
+            return
+
         try:
             if is_disconnect:
-                if voice and voice.is_connected():
-                    await voice.disconnect()
-                    print(f"Disconnected from {channel.name}")
+                await player_cog._stop(serverId)
+                print(f"Disconnected from {channel.name}")
             else:
-                if voice:
-                    await voice.move_to(channel)
-                    print(f"Moved to {channel.name}")
-                else:
-                    # Connect if not connected
-                    await channel.connect()
-                    print(f"Connected to {channel.name}")
+                await player_cog.join(channelId, serverId)
         except Exception as e:
             print("Error while connecting/moving voice channel:")
             print(e)
@@ -226,14 +235,41 @@ class Websocket(commands.Cog):
             return
 
         song_dict = player_cog.get_song_dict(serverId)
+        current_state = player_cog.get_current_state(serverId)
 
         # filename might not be needed in the frontend
-        for key, value in song_dict.items():
-            value.filename = ""
+        if song_dict is not None:
+                ws_songs = [
+                    {
+                        "index": s.index,
+                        "title": s.title,
+                        "artist": s.artist,
+                        "lengthStr": s.lengthStr,
+                        "length": s.length,
+                        "filename": "" 
+                    }
+                    for s in song_dict.values()
+                ]
+        else:
+            ws_songs = None
 
         return {
-            "songs": song_dict
+            "serverId": str(serverId),
+            "songs": ws_songs,
+            "playlistState": current_state
         }
+    
+    async def skip_song_to(self, serverId: int, songIndex: int):
+        guild = self.bot.get_guild(serverId)
+        if guild is None:
+            print(f"Guild with ID {serverId} not found.")
+            return
+
+        player_cog = self.bot.get_cog("Player")
+        if player_cog is None:
+            return
+        
+        await player_cog.skip_to(serverId, songIndex)
         
     @commands.Cog.listener("on_message")
     async def on_message(self, message):
@@ -265,7 +301,7 @@ class Websocket(commands.Cog):
         after_channel = after.channel.id if after.channel else None
 
         payload = WebSocketMessage(
-            msgtype="voiceStateUpdate",
+            msgtype="getMusicPlaylist",
             message={
                 "memberId": str(member.id),
                 "serverId": str(member.guild.id),
