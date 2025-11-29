@@ -301,7 +301,7 @@ class Websocket(commands.Cog):
         after_channel = after.channel.id if after.channel else None
 
         payload = WebSocketMessage(
-            msgtype="getMusicPlaylist",
+            msgtype="voiceStateUpdate",
             message={
                 "memberId": str(member.id),
                 "serverId": str(member.guild.id),
