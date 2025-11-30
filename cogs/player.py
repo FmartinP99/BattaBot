@@ -61,13 +61,23 @@ class Playing:
             super().__setattr__("playedDuration", 0)
 
         if name == "isPlaying":
-            print("isplaying is set to: ")
-            print(value)
-            print() 
-            if value:  # True → resume
-                    self._increment_loop.start()
-            else:  # False → pause
-                    self._increment_loop.stop()
+            self.update_loop_state()
+
+    def update_loop_state(self):
+        if self.isPlaying:
+            if not self._increment_loop.is_running():
+                self._increment_loop.start()
+        else:
+            if self._increment_loop.is_running():
+                self._increment_loop.stop()
+
+    def to_dict(self):
+         return {
+            "isPlaying": self.isPlaying,
+            "music": self.music,
+            "modifiedAt": self.modifiedAt,
+            "playedDuration": self.playedDuration,
+        }
 
 
 
@@ -672,7 +682,7 @@ class Player(commands.Cog):
 
             msgPayload = {
                 "serverId": str(serverId),
-                "playlistState": current_state
+                "playlistState": current_state.to_dict()
             }
 
             payload = WebSocketMessage(

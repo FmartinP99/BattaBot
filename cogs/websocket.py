@@ -256,7 +256,7 @@ class Websocket(commands.Cog):
         return {
             "serverId": str(serverId),
             "songs": ws_songs,
-            "playlistState": current_state
+            "playlistState": current_state.to_dict() if current_state else None
         }
     
     async def skip_song_to(self, serverId: int, songIndex: int):
