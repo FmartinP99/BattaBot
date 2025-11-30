@@ -199,10 +199,10 @@ class Player(commands.Cog):
                 self.mediaBots[guild.id] = PlayerAttributes()
     
     def get_song_dict(self, serverId: int) -> Optional[dict[int, Music]]:
-        return self.mediaBots[serverId].get_song_dict() if serverId in self.mediaBots else None
+        return self.mediaBots.get(serverId).get_song_dict() if serverId in self.mediaBots else None
     
     def get_current_state(self, serverId: int) -> Optional[Playing]:
-         return self.mediaBots[serverId].current if serverId in self.mediaBots else None
+         return self.mediaBots.get(serverId).current if serverId in self.mediaBots else None
     
     async def join(self, channelId: int, guildId: int):
 
@@ -244,7 +244,7 @@ class Player(commands.Cog):
             print("Play Music guild was none")
             return
 
-        mediaBot = self.mediaBots[guildId]
+        mediaBot = self.mediaBots.get(guildId)
 
         if uuid != mediaBot.now_playing_guid:
             return
@@ -313,7 +313,7 @@ class Player(commands.Cog):
 
     @commands.command(aliases=['er', 'ER'])
     async def playmusic(self, context: commands.Context):
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
         try:
             await self.join(context.author.voice.channel.id, context.guild.id)
             new_guid = uuid.uuid4()
@@ -327,7 +327,7 @@ class Player(commands.Cog):
 
     @commands.command()
     async def stop(self, context: commands.Context):
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
         await self._stop(context.guild.id)
 
         if mediaBot.playlistMessage is not None:
@@ -345,7 +345,7 @@ class Player(commands.Cog):
         
         #default, we skip forwards 1 
         if value == 0:
-            mediaBot = self.mediaBots[context.guild.id]
+            mediaBot = self.mediaBots.get(context.guild.id)
             if mediaBot is None:
                 print("Skip mediabot was None")
                 return
@@ -361,7 +361,7 @@ class Player(commands.Cog):
             print("Skip To guild is None " + guildId)
             return
         
-        mediaBot = self.mediaBots[guildId]
+        mediaBot = self.mediaBots.get(guildId)
         voice = self.get_voice_client(guild)
 
         self.stop_sound(mediaBot, voice)
@@ -374,7 +374,7 @@ class Player(commands.Cog):
 
     @commands.command()
     async def prev(self, context: commands.Context):
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
 
         prevIdx = mediaBot.current.music.index - 1
         self.skip_to(context.guild.id, prevIdx)
@@ -383,7 +383,7 @@ class Player(commands.Cog):
     @commands.command()
     async def shuffle(self, context: commands.Context):
 
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
         if mediaBot is None:
             print("Shuffle mediabot was None")
             return
@@ -401,7 +401,7 @@ class Player(commands.Cog):
     @commands.command(aliases=['np'])
     async def now_playing(self, context: commands.Context):
 
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
 
         if mediaBot.playlistMessage is not None:
             msg = await context.channel.fetch_message(mediaBot.playlistMessage.id)
@@ -442,7 +442,7 @@ class Player(commands.Cog):
         left_arrow = '\U00002B05'
         stop_button = '\U000023F9'
 
-        mediaBot = self.mediaBots[reaction.message.guild.id]
+        mediaBot = self.mediaBots.get(reaction.message.guild.id)
 
         if mediaBot.playlistMessage.id != reaction.message.id:
             return
@@ -489,7 +489,7 @@ class Player(commands.Cog):
             print("Server is not found in playlist update.")
             return
 
-        mediaBot = self.mediaBots[guildId]
+        mediaBot = self.mediaBots.get(guildId)
         songTitle = mediaBot.get_current_song_inferred_title()
         em = discord.Embed(title='Now playing:',
                            description=songTitle,
@@ -504,7 +504,7 @@ class Player(commands.Cog):
     @commands.command()
     async def lp_searchlist(self, context: commands.Context, *, searchTerm=""):
 
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
         searchedTitle = ""
 
         if searchTerm != "":
@@ -590,7 +590,7 @@ class Player(commands.Cog):
     @commands.command()
     async def setpath(self, context: commands.Context, *, path):
 
-        mediaBot = self.mediaBots[context.guild.id]
+        mediaBot = self.mediaBots.get(context.guild.id)
         path = str(path).replace("\\", "/").lower()
         mediaBot.mediaplayer_path = path
         await self.shuffle(context)
@@ -656,7 +656,7 @@ class Player(commands.Cog):
             print("Guild was None in the 'stop' command.")
             return
         
-        mediaBot = self.mediaBots[guildId]
+        mediaBot = self.mediaBots.get(guildId)
         if mediaBot is None:
             print("Mediabot was None in the 'stop' command.")
             return
