@@ -1,4 +1,5 @@
 import asyncio
+from discord.ext import tasks
 from dataclasses import dataclass, field
 import random
 from typing import Optional
@@ -28,11 +29,28 @@ class Music:
     length: int
     filename: str
 
-@dataclass(frozen=False)
 class Playing:
-    isPlaying: bool = False
-    music: Optional[Music] = None
-    modifiedAt: float = field(default_factory=lambda: time.time(), init=False)
+
+    def __init__(self, isPlaying: bool):
+        self.isPlaying: bool = isPlaying
+        self.music: Optional[Music] = None
+        self.modifiedAt: float = field(default_factory=lambda: time.time(), init=False)
+        self.playedDuration: int = 0
+
+        self._loop_task = self._increment_loop.start()
+        self.isPlaying = self.isPlaying #hack reassign, so the self.increment_loop will behave according to the internal isPlaying's state.
+       
+
+    @tasks.loop(seconds=1)
+    async def _increment_loop(self):
+        print("increment loop called")
+        if self.isPlaying:
+            self.playedDuration += 1
+            print(self.playedDuration)
+
+    @_increment_loop.before_loop
+    async def before_loop(self):
+        await asyncio.sleep(0)
 
     def __setattr__(self, name, value):
         # normal field update
@@ -40,6 +58,16 @@ class Playing:
         # whenever we update the music, the modifiedAt also changes.
         if name == "music":
             super().__setattr__("modifiedAt", time.time())
+            super().__setattr__("playedDuration", 0)
+
+        if name == "isPlaying":
+            print("isplaying is set to: ")
+            print(value)
+            print() 
+            if value:  # True → resume
+                    self._increment_loop.start()
+            else:  # False → pause
+                    self._increment_loop.stop()
 
 
 
