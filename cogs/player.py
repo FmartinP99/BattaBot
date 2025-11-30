@@ -335,6 +335,52 @@ class Player(commands.Cog):
                 await msg.delete()
                 mediaBot.playlistMessage = None
 
+    @commands.command()
+    async def pause(self, context: commands.Context):
+        self.play_pause(context.guild.id, True)
+
+    @commands.command()
+    async def resume(self, context: commands.Context):
+        self.play_pause(context.guild.id)
+
+    
+    def play_pause(self, guildId: int, isPausing:bool = False):
+        mediaBot = self.mediaBots.get(guildId)
+        if mediaBot is None:
+            print("PlayPause MediaBot was None.")
+            return
+        
+        guild = self.get_guild_by_id(guildId)
+        if guild is None:
+            print("PlayPause guild is None ")
+            return
+
+        voice = self.get_voice_client(guild)
+        if voice is None:
+            print("PlayPause voice is None ")
+            return
+        
+        if not voice.is_connected():
+            print("PlayPause voice is not connected.")
+            return
+        
+        # on resume
+        if not isPausing:
+            if not voice.is_paused():
+                return
+            mediaBot.current.isPlaying = True
+            voice.resume()
+            return
+        
+        # on pause
+        if voice.is_paused():
+            return
+        mediaBot.current.isPlaying = False
+        voice.pause()
+        
+
+
+
 
     @commands.command()
     async def skip(self, context: commands.Context, value: int=0):
