@@ -269,7 +269,7 @@ class Websocket(commands.Cog):
         if player_cog is None:
             return
         
-        await player_cog.skip_to(serverId, songIndex)
+        player_cog.skip_to(serverId, songIndex)
         
     @commands.Cog.listener("on_message")
     async def on_message(self, message):
