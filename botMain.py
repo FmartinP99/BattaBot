@@ -3,7 +3,6 @@ from discord.ext import commands
 from globals import g_database, g_prefix, g_ownerid, g_api, g_ffmpeg, g_websocket_enabled
 import os
 import traceback
-import asyncio
 
 PROTECTED_MODULES = ["module_control"]  # can't unload these
 
@@ -13,6 +12,7 @@ PROTECTED_MODULES_FROM_LOADING = ["remindme"]
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.presences = True
 bot = commands.Bot(command_prefix=f'{g_prefix}', help_command=None, intents=intents)
 prefix = g_prefix
 

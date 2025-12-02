@@ -299,7 +299,7 @@ class Player(commands.Cog):
 
             print("plaY_music called with newIndex: " + str(newIndex))
            
-            self._send_ws_notification_on_song_change(guildId)
+            self._send_ws_notification_on_paylist_state_change(guildId)
          
 
             voice.play(discord.FFmpegOpusAudio(executable=f"{g_ffmpeg}",
@@ -370,6 +370,7 @@ class Player(commands.Cog):
                 return
             mediaBot.current.isPlaying = True
             voice.resume()
+            self._send_ws_notification_on_paylist_state_change(guildId)
             return
         
         # on pause
@@ -377,11 +378,8 @@ class Player(commands.Cog):
             return
         mediaBot.current.isPlaying = False
         voice.pause()
+        self._send_ws_notification_on_paylist_state_change(guildId)
         
-
-
-
-
     @commands.command()
     async def skip(self, context: commands.Context, value: int=0):
 
@@ -721,7 +719,7 @@ class Player(commands.Cog):
         await voice.disconnect()
 
     ## websocket communication
-    def _send_ws_notification_on_song_change(self, serverId: int):
+    def _send_ws_notification_on_paylist_state_change(self, serverId: int):
 
         try:
             current_state = self.get_current_state(serverId)

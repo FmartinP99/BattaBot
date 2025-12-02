@@ -1,3 +1,4 @@
+from discord import Member
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
 import botMain
@@ -53,6 +54,7 @@ class Websocket(commands.Cog):
                 channel_id = int(message["channelId"])
                 response = await self.sendMessage(server_id, channel_id, message["text"]) 
             except Exception as e:
+                print("Error messageType was: " + msgtype)
                 print(e)
                 return None
         elif msgtype == "setReminder":
@@ -68,6 +70,7 @@ class Websocket(commands.Cog):
 
                 response = await self.handleSetReminder(server_id, channel_id, member_id, date, text)
             except Exception as e:
+                print("Error messageType was: " + msgtype)
                 print(e)
                 return None
             
@@ -79,6 +82,7 @@ class Websocket(commands.Cog):
 
                 response = await self.voice_channel_update(server_id, channel_id, is_disconnect)
             except Exception as e:
+                print("Error messageType was: " + msgtype)
                 print(e)
                 return None
             
@@ -87,6 +91,7 @@ class Websocket(commands.Cog):
                 server_id = int(message["serverId"])
                 response = await self.get_music_playlist(server_id)
             except Exception as e:
+                print("Error messageType was: " + msgtype)
                 print(e)
                 return None
 
@@ -97,9 +102,29 @@ class Websocket(commands.Cog):
 
                 response = await self.skip_song_to(server_id, song_index)
             except Exception as e:
+                print("Error messageType was: " + msgtype)
                 print(e)
                 return None
-                        
+            
+        elif msgtype == "playlistPause" or msgtype == "playlistResume":
+            try:
+                is_pausing = msgtype == "playlistPause"
+                server_id = int(message["serverId"])
+
+                response = await self.play_pause(server_id, is_pausing)
+            except Exception as e:
+                print("Error messageType was: " + msgtype)
+                print(e)
+                return None
+
+        elif msgtype == "playlistStateUpdate":
+            try:
+                server_id = int(message["serverId"])
+                response = self.get_voice_state(server_id)
+            except Exception as e:
+                print("Error messageType was: " + msgtype)
+                print(e)
+                return None        
         return response
     
    
@@ -143,7 +168,8 @@ class Websocket(commands.Cog):
                     "name": member.name,
                     "displayName": member.display_name,
                     "avatarUrl" : member.avatar.url if member.avatar else member.default_avatar.url,
-                    "bot": member.bot
+                    "bot": member.bot,
+                    "status": str(member.status)
                 })
 
             all_data.append(guild_info)
@@ -270,6 +296,20 @@ class Websocket(commands.Cog):
             return
         
         player_cog.skip_to(serverId, songIndex)
+
+    async def play_pause(self, serverId: int, isPausing: bool):
+        guild = self.bot.get_guild(serverId)
+        if guild is None:
+            print(f"Guild with ID {serverId} not found.")
+            return
+
+        player_cog = self.bot.get_cog("Player")
+        if player_cog is None:
+            print(f"PlayPause player cog was none.")
+            return
+        
+        player_cog.play_pause(serverId, isPausing)
+
         
     @commands.Cog.listener("on_message")
     async def on_message(self, message):
@@ -308,6 +348,37 @@ class Websocket(commands.Cog):
                 "beforeChannel": str(before_channel),
                 "afterChannel": str(after_channel),
                 "epoch": epoch,
+            }
+        )
+
+        await ws_manager.broadcast(payload)
+
+    def get_voice_state(self, serverId: int):
+        guild = self.bot.get_guild(serverId)
+        if guild is None:
+            print(f"Guild with ID {serverId} not found.")
+            return
+
+        player_cog = self.bot.get_cog("Player")
+        if player_cog is None:
+            return
+
+        current_state = player_cog.get_current_state(serverId)
+        return  {
+                "serverId": str(serverId),
+                "playlistState": current_state.to_dict()
+            }
+    
+    @commands.Cog.listener()
+    async def on_presence_update(self, before: Member, after: Member):
+        if before.status != after.status:
+            payload = WebSocketMessage(
+            msgtype="presenceUpdate",
+            message={
+                "memberId": str(before.id),
+                "serverId": str(before.guild.id),
+                "newStatus": str(after.status),
+                "newDisplayName": str(after.display_name),
             }
         )
 
