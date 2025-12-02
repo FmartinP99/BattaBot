@@ -371,20 +371,29 @@ class Websocket(commands.Cog):
     
     @commands.Cog.listener()
     async def on_presence_update(self, before: Member, after: Member):
-        if before.status != after.status:
-            payload = WebSocketMessage(
-            msgtype="presenceUpdate",
-            message={
-                "memberId": str(before.id),
-                "serverId": str(before.guild.id),
-                "newStatus": str(after.status),
-                "newDisplayName": str(after.display_name),
+        if(before.status != after.status):
+            await self._handle_member_change(before, after)
+
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before: Member, after: Member):
+        await self._handle_member_change(before, after) 
+    
+    async def _handle_member_change(self, before: Member, after: Member):
+        
+        payload = WebSocketMessage(
+        msgtype="presenceUpdate",
+        message={
+            "memberId": str(before.id),
+            "serverId": str(before.guild.id),
+            "newStatus": str(after.status),
+            "newDisplayName": str(after.display_name),
             }
         )
 
         await ws_manager.broadcast(payload)
 
-            
+        
         
 
 async def setup(bot):
