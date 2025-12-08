@@ -539,7 +539,7 @@ class Player(commands.Cog):
                            description=songTitle,
                            color=0x71368a)
         em.set_thumbnail(url="attachment://cover.jpg")
-        em.set_footer(text=f"Made by:\nTReKeSS#3943")
+        em.set_footer(text=f"Made by:\nTReKeSS")
         msg = await channel.fetch_message(messageId)
         if msg:
             await msg.edit(embed=em)

@@ -74,7 +74,6 @@ async def load_extensions():
                     print(f" <{filename[:-3]}> module loaded!")
                 else:
                     print("The websocket is turned off!!")
-
             else:
                 if filename != "player.py" or (filename == "player.py" and len(g_ffmpeg) > 0):
                     await bot.load_extension(f'cogs.{filename[:-3]}')
