@@ -23,3 +23,4 @@ ffmpeg
 .venv/
 proba.py
 Files/globalsDefaultValueImport.txt
+cogs/database2.py
