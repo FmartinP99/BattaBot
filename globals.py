@@ -8,8 +8,6 @@ g_ownerid = None
 g_botid = None
 g_localMediaPlayerFolderPath = ""
 g_prefix = ""
-g_database = False
-g_api = False
 g_ffmpeg = ""
 g_websocket_enabled = False
 
@@ -19,8 +17,6 @@ def set_globals():
     global g_botid
     global g_localMediaPlayerFolderPath
     global g_prefix
-    global g_database
-    global g_api
     global g_ffmpeg
     global g_websocket_enabled
 
@@ -48,14 +44,6 @@ def set_globals():
 
         elif line.startswith('PREFIX'):
             g_prefix = var
-
-        elif line.startswith('DATABASE'):
-            if var.lower() == "true":
-                g_database = True
-
-        elif line.startswith('API'):
-            if var.lower() == "true":
-                g_api = True
 
         elif line.startswith("FFMPEG"): 
             g_ffmpeg = var.replace("\\", "/")

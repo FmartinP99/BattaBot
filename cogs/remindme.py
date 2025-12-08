@@ -22,8 +22,6 @@ class RemindMe(commands.Cog):
         self.reminderService: RemindmeService = RemindmeService()
         self.scheduled_tasks: dict[int, asyncio.Task] = {}
         
-    separator = "|!!|"
-
     @commands.command(aliases=['rm'])
     async def remindme(self, context, time, *args):
         nowtime = datetime.now()
@@ -205,8 +203,6 @@ class RemindMe(commands.Cog):
         deleted_rows_num = await self.reminderService.delete_reminders(old_remind_row_ids)
         await context.send(f"{deleted_rows_num} remindme has been deleted!")
 
-
-
     async def auto_mention(self, sleep_timer: float, server_id: int, channel_id: int, author: int, row_id: int, message: str):
         await asyncio.sleep(sleep_timer)
         await self.ping_bot(server_id, channel_id, message, author, row_id)
@@ -258,7 +254,7 @@ class RemindMe(commands.Cog):
         nowTime = datetime.now()
         rows_to_delete = [r for r in reminder_rows if r.remind_happened]
         for reminder in reminders_to_mention:
-            # was in the past therefore no mention, maybe delete these later?
+            # was in the past therefore no mention, can delete them with .clearmyrms
             sleepTimer = (reminder.remind_time - nowTime).total_seconds()
             if sleepTimer < 0:
                 continue

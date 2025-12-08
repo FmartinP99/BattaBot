@@ -47,8 +47,6 @@ async def notify_frontend(message: str):
 
 
 async def main_run():
-    # if g_database:
-    # else:
     dbHandler: BaseDb = SQLite3Db("Database/files/database.db")
     dbHandler.connect("Reminders", "Database/files/CreateReminderTable.sql")
     await load_extensions()

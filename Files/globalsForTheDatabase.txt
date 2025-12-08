@@ -1,6 +1,0 @@
-CONNECTION = "" # YOUR CONNECTION STRING
-DB_NAME = "DiscordDataBase" # you can change any value below freely if you want different names in your db
-DB_MESSAGES_NAME = "Messages"
-DB_USERS_NAME = "Users"
-DB_GROUPS_NAME = "Groups"
-DB_POINTS_NAME = "Points"

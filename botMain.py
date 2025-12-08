@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from globals import g_database, g_prefix, g_ownerid, g_api, g_ffmpeg, g_websocket_enabled
+from globals import  g_prefix, g_ownerid, g_ffmpeg, g_websocket_enabled
 import os
 import traceback
 
@@ -30,13 +30,6 @@ async def on_ready():
     global IS_BOT_READY
     print("Bot is ready!")
     await status_to_change("New tracemoe command available")
-    if g_database is True:
-        from database_mongo import connect
-        connect.start()
-    else:
-        print("You didn't provide a database!")
-    IS_BOT_READY = True
-
 
 
 @bot.command()
@@ -65,16 +58,9 @@ async def on_command_error(context, error):   # triggers at every error
         print(error)
         traceback.print_exc()
 
-if g_api is False:
-    print(f"The bot's API is disabled!")
-
 if len(g_ffmpeg) == 0:
     PROTECTED_MODULES_FROM_LOADING.append('player')
     print("There is no FFMPEG path in globalsDefaultValueImport.txt")
-
-if g_database == False:
-    PROTECTED_MODULES_FROM_LOADING.append('database')
-    PROTECTED_MODULES_FROM_LOADING.append('group')
 
 
 async def load_extensions():
@@ -82,14 +68,7 @@ async def load_extensions():
     # loads the cogs at start
     for filename in os.listdir('./cogs/'):
         if filename.endswith('.py') and not filename.endswith("database2.py"):
-            if filename == "database.py" or filename == "group.py":
-                if g_database is True:
-                    await bot.load_extension(f'cogs.{filename[:-3]}')
-                    print(f" <{filename[:-3]}> module loaded!")
-                else:
-                    print("The database is turned off!!")
-
-            elif filename == "websocket.py":
+            if filename == "websocket.py":
                 if g_websocket_enabled is True:
                     await bot.load_extension(f'cogs.{filename[:-3]}')
                     print(f" <{filename[:-3]}> module loaded!")
