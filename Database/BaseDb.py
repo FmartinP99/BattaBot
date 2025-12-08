@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
-
+from __future__ import annotations
 from Database.Classes.Remind import CreateRemind, RemindRow
 
 class BaseDb(ABC):
@@ -17,7 +17,7 @@ class BaseDb(ABC):
         pass
 
     @classmethod
-    def get_instance(cls):
+    def get_instance(cls) -> BaseDb:
         """Return the singleton instance if it exists, else None."""
         return cls._instances.get(cls, None)
     
