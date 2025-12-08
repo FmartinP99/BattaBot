@@ -1,3 +1,5 @@
+from Database.BaseDb import BaseDb
+from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
 from globals import g_api, g_database, g_websocket_enabled
 from import_routes import battAPP_blueprints
@@ -49,6 +51,8 @@ async def notify_frontend(message: str):
 
 
 async def main_run():
+
+        
     # if g_api is True and g_database:
     #     from quart import Quart
     #     battAPP = Quart(__name__)
@@ -61,6 +65,8 @@ async def main_run():
     #         await load_extensions()
     #         await bot.start(token)
     # else:
+        dbHandler: BaseDb = SQLite3Db("Database/files/database.db")
+        dbHandler.connect("Reminders", "Database/files/CreateReminderTable.sql")
         await load_extensions()
         await bot.start(token)
 

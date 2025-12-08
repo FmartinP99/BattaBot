@@ -1,0 +1,184 @@
+import asyncio
+from datetime import datetime
+import os
+from sqlite3 import Connection
+from threading import Lock
+from typing import List, Optional
+from Database.BaseDb import BaseDb
+import sqlite3
+
+from Database.Classes.Remind import CreateRemind, RemindRow
+
+
+class SQLite3Db(BaseDb):
+
+    def __init__(self, db_path):
+        self._db_path = db_path
+        self._connection: Optional[Connection] = None
+        self._lock = Lock()
+
+    def connect(self, tableName: Optional[str] = None, sql_file: Optional[str] = None) -> Optional[Connection]:
+        if self._connection is None:
+            try:
+                self._connection = sqlite3.connect(self._db_path, check_same_thread=False)
+                self._connection.row_factory = sqlite3.Row
+                print(f"Connected to SQLite database at {self._db_path}")
+                if self._connection and tableName and sql_file and not self.table_exists(tableName):
+                    isCreated = self.run_sql_file(sql_file)
+                    if not isCreated:
+                        print(f"{tableName} has not been created!")
+                elif self._connection and tableName and sql_file:
+                    print("Connection happened but table was not created.")
+            except sqlite3.Error as e:
+                print(f"Error connecting to SQLite: {e}")
+        else:
+            print("Already connected to the database!")
+        return self._connection
+    
+    def isConnected(self) -> bool:
+        return self._connection is not None
+
+    def close(self):
+        if self._connection:
+            self._connection.close()
+            self._connection = None
+            print("SQLite connection closed.")
+
+    def table_exists(self, table_name: str) -> bool:
+        if not os.path.exists(self._db_path):
+            return False
+        try:
+            cursor = self._connection.cursor()
+            cursor.execute("""
+                SELECT name FROM sqlite_master
+                WHERE type='table' AND name=?;
+            """, (table_name,))
+            exists = cursor.fetchone() is not None
+            return exists
+        except Exception as e:
+            return False
+
+    def run_sql_file(self, sql_file: str) -> bool:
+        if not os.path.exists(sql_file):
+            return False
+        try:
+            cursor = self._connection.cursor()
+            with open(sql_file, "r") as f:
+                cursor.executescript(f.read())
+            self._connection.commit()
+            return True
+        except Exception as e:
+            return False
+        
+    def _parse_datetime(self, value: str) -> Optional[datetime]:
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        
+    def _convert_reminder_to_Remindrow(self, row:sqlite3.Row)-> Optional[RemindRow]:
+        if row is None:
+            return None
+
+        created_at = self._parse_datetime(row["CREATED_AT"])
+        remind_time = self._parse_datetime(row["REMIND_TIME"]) if row["REMIND_TIME"] else None
+
+        return RemindRow(
+            id=row["ID"],
+            server_id=row["SERVER_ID"],
+            channel_id=row["CHANNEL_ID"],
+            user_id=row["USER_ID"],
+            created_at=created_at,
+            remind_time=remind_time,
+            remind_text=row["REMIND_TEXT"],
+            remind_happened=row["REMIND_HAPPENED"]
+        )
+        
+    async def add_reminder(self, remind: CreateRemind) -> int:
+        def sync_insert():
+            with self._lock:
+                conn = self.connect()
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO Reminders (SERVER_ID, CHANNEL_ID, USER_ID, REMIND_TIME, REMIND_TEXT, REMIND_HAPPENED)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (remind.server_id, remind.channel_id, remind.user_id,
+                    remind.remind_time, remind.remind_text, remind.remind_happened))
+                conn.commit()
+                return cursor.lastrowid
+
+        return await asyncio.to_thread(sync_insert)
+
+   
+    async def get_reminder(self, reminder_id: int) -> Optional[RemindRow]:
+        def sync_get():
+            conn = self.connect()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Reminders WHERE ID=?", (reminder_id,))
+            row = cursor.fetchone()
+            return self._convert_reminder_to_Remindrow(row)
+
+        return await asyncio.to_thread(sync_get)
+
+  
+    async def get_all_reminders(self) -> List[RemindRow]:
+        def sync_get_all():
+            conn = self.connect()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Reminders")
+            rows = cursor.fetchall()
+            if rows is None:
+                return []
+            return [self._convert_reminder_to_Remindrow(row) for row in rows]
+
+        return await asyncio.to_thread(sync_get_all)
+
+ 
+    async def get_reminders(self, server_id: Optional[str], user_id: Optional[str]) -> List[RemindRow]:
+        def sync_get_filtered():
+            conn = self.connect()
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM Reminders WHERE SERVER_ID=? AND USER_ID=?", (server_id, user_id))
+            rows = cursor.fetchall()
+            if rows is None:
+                return []
+            return [
+                reminder
+                for row in rows
+                if (reminder := self._convert_reminder_to_Remindrow(row)) is not None
+            ]
+
+        return await asyncio.to_thread(sync_get_filtered)
+
+   
+    async def update_reminder(self, reminder_id: int, **kwargs) -> bool:
+        if not kwargs:
+            return False
+
+        def sync_update():
+            with self._lock:
+                conn = self.connect()
+                cursor = conn.cursor()
+                fields = ", ".join(f"{key}=?" for key in kwargs.keys())
+                values = list(kwargs.values())
+                values.append(reminder_id)
+                sql = f"UPDATE Reminders SET {fields} WHERE ID=?"
+                cursor.execute(sql, values)
+                conn.commit()
+                return cursor.rowcount > 0
+
+        return await asyncio.to_thread(sync_update)
+
+
+    async def delete_reminder(self, reminder_id: int) -> bool:
+        def sync_delete():
+            with self._lock:
+                conn = self.connect()
+                cursor = conn.cursor()
+                cursor.execute("DELETE FROM Reminders WHERE ID=?", (reminder_id,))
+                conn.commit()
+                return cursor.rowcount > 0
+
+        return await asyncio.to_thread(sync_delete)

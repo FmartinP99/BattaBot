@@ -1,16 +1,20 @@
 from discord.ext import commands
 from datetime import datetime, timedelta
 from dataclasses import dataclass
+from Database.BaseDb import BaseDb
+from Database.Classes.Remind import CreateRemind
 from botMain import IS_BOT_READY
 import asyncio
 import re
 import os
 import sys
 from discord.ext import tasks
+from Database.SQLite3Db import SQLite3Db
 
 class RemindMe(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.databaseHandler: BaseDb = SQLite3Db.get_instance() # to-do: branch this if it will support multiple database classes.
         
     separator = "|!!|"
 
@@ -114,6 +118,7 @@ class RemindMe(commands.Cog):
                 sleepTimer = (set_time - nowtime).total_seconds()
                 await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
                 await self.remindme_writefile(context.message.channel.id, context.message.author.id, set_time, message_to_send)
+                await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
                 await asyncio.sleep(sleepTimer)
                 await self.ping_bot(context.message.guild.id, context.message.channel.id, message_to_send, context.message.author.id)
 
@@ -155,7 +160,7 @@ class RemindMe(commands.Cog):
         with open('Files/reminders.txt', 'a', encoding='utf-8', newline='\n') as f:
             f.write(
                 f"{channelId}{self.separator}{authorId}{self.separator}{time}{self.separator}{message}{self.separator}\n")
-
+            
     async def remindme_checkfile(self):
         if os.stat('Files/reminders.txt').st_size != 0:
             with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as f:
@@ -236,6 +241,28 @@ class RemindMe(commands.Cog):
             lines = file.read().splitlines(True)
         with open('Files/reminders.txt', 'w', encoding='utf-8', newline='\n') as file:
             file.writelines(lines[1:])
+
+
+    async def add_remindme_to_database(self, server_id,  channel_id, user_id, remind_time, remind_text):
+        row: CreateRemind = CreateRemind(
+        server_id=server_id,
+        channel_id=channel_id,
+        user_id=user_id,
+        remind_time=remind_time,
+        remind_text=remind_text,
+        remind_happened=0  
+    )
+        await self.databaseHandler.add_reminder(row)
+
+    @commands.command(aliases=['grm'])
+    async def get_all_remindmes(self, context):
+        reminders = await self.databaseHandler.get_all_reminders()
+        if reminders is None:
+            return
+        
+        for reminder in reminders:
+            print(reminder)
+            print()
 
 
     @commands.Cog.listener()
