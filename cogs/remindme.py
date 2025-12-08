@@ -42,9 +42,21 @@ class RemindMe(commands.Cog):
 
         # check if 03:00 or 3:00 and make it 03:00
 
-        if len(time) == 4 and ":" in time:
-            time = "0" + time
+        if ":" not in time:
+            await context.send("Invalid time format. Use HH:MM or H:MM.")
+            return
 
+        hours, minutes = time.split(":", 1)
+
+        # pad single-digit hours
+        if len(hours) == 1:
+            hours = "0" + hours
+
+        # pad minutes 
+        if len(minutes) == 1:
+            minutes = "0" + minutes
+
+        time = f"{hours}:{minutes}"
         time_format = self.regexes(time)
 
         if time_format == TimeFormat.INVALID:
