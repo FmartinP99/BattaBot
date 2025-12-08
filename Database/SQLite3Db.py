@@ -31,8 +31,6 @@ class SQLite3Db(BaseDb):
                     print("Connection happened but table was not created.")
             except sqlite3.Error as e:
                 print(f"Error connecting to SQLite: {e}")
-        else:
-            print("Already connected to the database!")
         return self._connection
     
     def isConnected(self) -> bool:
@@ -93,7 +91,7 @@ class SQLite3Db(BaseDb):
             created_at=created_at,
             remind_time=remind_time,
             remind_text=row["REMIND_TEXT"],
-            remind_happened=row["REMIND_HAPPENED"]
+            remind_happened=True if row["REMIND_HAPPENED"] else False
         )
         
     async def add_reminder(self, remind: CreateRemind) -> int:
@@ -171,7 +169,6 @@ class SQLite3Db(BaseDb):
 
         return await asyncio.to_thread(sync_update)
 
-
     async def delete_reminder(self, reminder_id: int) -> bool:
         def sync_delete():
             with self._lock:
@@ -180,5 +177,24 @@ class SQLite3Db(BaseDb):
                 cursor.execute("DELETE FROM Reminders WHERE ID=?", (reminder_id,))
                 conn.commit()
                 return cursor.rowcount > 0
+
+        return await asyncio.to_thread(sync_delete)
+    
+    async def delete_reminders(self, reminder_ids: list[int]) -> int:
+        if not reminder_ids:
+            return False  # nothing to delete
+
+        def sync_delete():
+            with self._lock:
+                conn = self.connect()
+                cursor = conn.cursor()
+
+                placeholders = ",".join(["?"] * len(reminder_ids))
+
+                sql = f"DELETE FROM Reminders WHERE ID IN ({placeholders})"
+                cursor.execute(sql, reminder_ids)
+                conn.commit()
+
+                return cursor.rowcount
 
         return await asyncio.to_thread(sync_delete)

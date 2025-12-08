@@ -1,9 +1,11 @@
+from enum import Enum, auto
 from discord.ext import commands
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from Database.BaseDb import BaseDb
 from Database.Classes.Remind import CreateRemind
-from botMain import IS_BOT_READY
+from Services.RemindmeService import RemindmeService
+from botMain import check_owner
 import asyncio
 import re
 import os
@@ -11,10 +13,18 @@ import sys
 from discord.ext import tasks
 from Database.SQLite3Db import SQLite3Db
 
+class TimeFormat(Enum):
+    FULL_DATE = auto()       # yyyy-mm-dd HH:MM
+    DATE_NO_YEAR = auto()    # mm-dd HH:MM
+    DATE_ONLY = auto()       # yyyy-mm-dd or mm-dd
+    TIME_ONLY = auto()       # HH:MM
+    NUMBER = auto()          # integer
+    INVALID = auto()
+
 class RemindMe(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.databaseHandler: BaseDb = SQLite3Db.get_instance() # to-do: branch this if it will support multiple database classes.
+        self.reminderService: RemindmeService = RemindmeService()
         
     separator = "|!!|"
 
@@ -39,11 +49,13 @@ class RemindMe(commands.Cog):
         if len(time) == 4 and ":" in time:
             time = "0" + time
 
-        if self.regexes(time) == False:
+        time_format = self.regexes(time)
+
+        if time_format == TimeFormat.INVALID:
             await context.send("The format of the time is wrong!")
             return
         else:
-            if self.regexes(time) == 4:
+            if time_format == TimeFormat.TIME_ONLY:
                 message_to_send = ' '.join(args)
 
                 __Hour = int(time[:2])
@@ -60,14 +72,17 @@ class RemindMe(commands.Cog):
                 else:
                     await context.send("I can't ping you in the past.")
 
-            elif self.regexes(time) == 5 and (str(args[0]).startswith("+")):
+            elif time_format == TimeFormat.NUMBER and (str(args[0]).startswith("+")):
                 set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, _Second, _Microsecond) + timedelta(minutes=int(time))
                 message_to_send = ' '.join(args)
                 message_to_send = message_to_send[1:]  # cuts the "+"
                 valid_regex = True
 
 
-            elif self.regexes(time) == 3:
+            elif time_format == TimeFormat.DATE_ONLY:
+                if len(args) == 0:
+                    await context.send("You must provide a time after the date. Example: `12-09 14:30`")
+                    return
                 valid_regex = False  # not sure if the regex  yyyy-mm-dd hh:mm  format, and it's not in the past
                 time = time + " " + args[0]
 
@@ -77,13 +92,13 @@ class RemindMe(commands.Cog):
                     time = time[:_split_char_index - 1] + "0" + time[_split_char_index - 1:]
 
                 try:
-                    regex_retrun = self.regexes(time)
-                    if regex_retrun == 1 or regex_retrun == 2:
+                    time_format = self.regexes(time)
+                    if time_format == TimeFormat.FULL_DATE or time_format == TimeFormat.DATE_NO_YEAR:
                         message_to_send = ""
                         if len(args) > 0:
                             message_to_send = ' '.join(args[1:])
 
-                        if regex_retrun == 1:
+                        if time_format == TimeFormat.FULL_DATE:
                             __Year = int(time[0:4])
                             __Month = int(time[5:7])
                             __Day = int(time[8:10])
@@ -115,148 +130,93 @@ class RemindMe(commands.Cog):
                 sys.exc_info()
 
             if valid_regex is True:
-                sleepTimer = (set_time - nowtime).total_seconds()
+                sleep_timer = (set_time - nowtime).total_seconds()
                 await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
-                await self.remindme_writefile(context.message.channel.id, context.message.author.id, set_time, message_to_send)
-                await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
-                await asyncio.sleep(sleepTimer)
-                await self.ping_bot(context.message.guild.id, context.message.channel.id, message_to_send, context.message.author.id)
+                rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
+                await self.auto_mention(sleep_timer, context.message.guild.id, context.message.channel.id, context.message.author.id, rowId, message_to_send)
 
-    async def ping_bot(self, serverId, channelId, msg, author):
+    async def auto_mention(self, sleep_timer: float, server_id: int, channel_id: int, author: int, row_id: int, message: str):
+        await asyncio.sleep(sleep_timer)
+        await self.ping_bot(server_id, channel_id, message, author, row_id)
 
-        guild = self.bot.get_guild(serverId)
+    async def ping_bot(self, server_id:int, channel_id:int, msg: str, author: int, row_id: int):
+
+        guild = self.bot.get_guild(server_id)
         if not guild:
-            print(f"Guild {serverId} not found")
+            print(f"Guild {server_id} not found")
             return
 
-        channel = guild.get_channel(channelId) # to-do: megnézni hogy text type-e a channel
+        channel = guild.get_channel(channel_id) # to-do: megnézni hogy text type-e a channel
         if not channel:
-            print(f"Channel {channelId} not found")
+            print(f"Channel {channel_id} not found")
             return
 
-        if msg != "":
-            await channel.send(f"<@{author}>\n{str(msg)}")
-        else:
-            await channel.send(f"<@{author}>")
+        content = f"<@{author}>"
+        if msg:
+            content += f"\n{msg}"
+        await channel.send(content)
+        await self.reminderService.update_reminder_reminded_column(row_id, True)
 
-    def regexes(self, time):
+    def regexes(self, time: str) -> TimeFormat:
 
-        if re.match('(([12]\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))\\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9]))', time):
-            return 1
-        elif re.match('(((0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))\\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9]))', time):
-            return 2
-        elif re.match('(([12]\\d{3}-)?(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01]))', time):
-            return 3
-        elif re.match('^[0-2]?[0-9]:[0-5][0-9]', time):
-            return 4
-        elif re.match('^[1-9][0-9]{0,3}$', time):
-            return 5
-        else:
-            return False
+        if re.match(r'([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9])', time):
+            return TimeFormat.FULL_DATE
 
-    async def remindme_writefile(self, channelId, authorId, time, *args):
-        message = " ".join(args)
+        elif re.match(r'((0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9])', time):
+            return TimeFormat.DATE_NO_YEAR
 
-        with open('Files/reminders.txt', 'a', encoding='utf-8', newline='\n') as f:
-            f.write(
-                f"{channelId}{self.separator}{authorId}{self.separator}{time}{self.separator}{message}{self.separator}\n")
-            
-    async def remindme_checkfile(self):
-        if os.stat('Files/reminders.txt').st_size != 0:
-            with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as f:
-                if f:
-                    record_array = []
-                    for line in f:
-                        try:
-                            currentline = line.split(f"{self.separator}")
-                            sentTime = currentline[2]
-                            msg = currentline[3]
+        elif re.match(r'(([12]\d{3}-)?(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))', time):
+            return TimeFormat.DATE_ONLY
 
-                            _year = int(sentTime[0:4])
-                            _month = int(sentTime[5:7])
-                            _day = int(sentTime[8:10])
-                            _hour = int(sentTime[11:13])
-                            _minute = int(sentTime[14:16])
-                            _microsecond = int(sentTime[20:26])
+        elif re.match(r'^[0-2]?[0-9]:[0-5][0-9]$', time):
+            return TimeFormat.TIME_ONLY
 
-                            getTime = datetime(_year, _month, _day, _hour, _minute, 0, _microsecond)
+        elif re.match(r'^[1-9][0-9]{0,3}$', time):
+            return TimeFormat.NUMBER
 
-                            if (getTime - datetime.now()).total_seconds() > 0:
-                                record_array.append(Record(int(currentline[0]), int(currentline[1]), getTime, currentline[3]))
-                            else:
-                                print(f"This is the past! {getTime} - {msg}")
-                        except Exception:
-                            print("An error occurred during the reading of the file. Maybe empty?")
-                            sys.exc_info()
+        return TimeFormat.INVALID
 
-                    record_array.sort()
+    async def check_remindmes_in_db(self):
 
-            with open('Files/reminders.txt', 'w', encoding='utf-8', newline='\n') as f:
+        reminder_rows = await self.reminderService.get_all_reminders()
+        if reminder_rows is None:
+            return
 
-                for record in record_array:
-                    f.write(record.to_line(self.separator) + "\n")
+        reminders_to_mention = [r for r in reminder_rows if not r.remind_happened]
+        nowTime = datetime.now()
+        rows_to_delete = [r for r in reminder_rows if r.remind_happened]
+        for reminder in reminders_to_mention:
+            # was in the past therefore no mention, maybe delete these later?
+            sleepTimer = (reminder.remind_time - nowTime).total_seconds()
+            if sleepTimer < 0:
+                continue
+            asyncio.create_task(self.auto_mention(sleepTimer, 
+                                                  int(reminder.server_id), 
+                                                  int(reminder.channel_id), 
+                                                  int(reminder.user_id),
+                                                  int(reminder.id),
+                                                  reminder.remind_text, 
+                                                  ))
+        
 
-            await self.remindme_readfile()
-
-
-    async def remindme_readfile(self):
-
-        lines_array = []
-        with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as f:
-            if f:
-                for line in f:
-                    lines_array.append(line)
-
-        for line in lines_array:
-            currentline = line.split(f"{self.separator}")
-            channelid = int(currentline[0])
-            authorid = int(currentline[1])
-            author = f'<@{authorid}>'
-            sentTime = currentline[2]
-            sentMessage = self.separator.join(currentline[3:len(currentline) - 1])
-
-            _year = int(sentTime[0:4])
-            _month = int(sentTime[5:7])
-            _day = int(sentTime[8:10])
-            _hour = int(sentTime[11:13])
-            _minute = int(sentTime[14:16])
-
-            getTime = datetime(_year, _month, _day, _hour, _minute)
-            sleepTimer = (getTime - datetime.now()).total_seconds()
-
-            asyncio.create_task(self.auto_mention(sleepTimer, channelid, sentMessage, author))
-
-
-    async def auto_mention(self, sleepTimer, channelid, sentMessage, author):
-
-        channel = self.bot.get_channel(channelid)
-
-        await asyncio.sleep(sleepTimer)
-        await channel.send(f"{author}\n{str(sentMessage)}")
-        await self.delete_first_line()
-
-    async def delete_first_line(self):
-
-        with open('Files/reminders.txt', 'r', encoding='utf-8', newline='\n') as file:
-            lines = file.read().splitlines(True)
-        with open('Files/reminders.txt', 'w', encoding='utf-8', newline='\n') as file:
-            file.writelines(lines[1:])
-
+        
+        if len(rows_to_delete) > 0: 
+            deleted_row_numbers = await self.reminderService.delete_reminders([r.id for r in rows_to_delete ])
+            print(f"After scanning the remidners table {deleted_row_numbers} were deleted!")
+            for row in rows_to_delete:
+                print("-----------")
+                print(row)
+                print("-----------")
+        
 
     async def add_remindme_to_database(self, server_id,  channel_id, user_id, remind_time, remind_text):
-        row: CreateRemind = CreateRemind(
-        server_id=server_id,
-        channel_id=channel_id,
-        user_id=user_id,
-        remind_time=remind_time,
-        remind_text=remind_text,
-        remind_happened=0  
-    )
-        await self.databaseHandler.add_reminder(row)
-
+        inserted_id = await self.reminderService.add_remindme(server_id,  channel_id, user_id, remind_time, remind_text)
+        return inserted_id
+    
+    @commands.check(check_owner)
     @commands.command(aliases=['grm'])
     async def get_all_remindmes(self, context):
-        reminders = await self.databaseHandler.get_all_reminders()
+        reminders = await self.reminderService.get_all_reminders()
         if reminders is None:
             return
         
@@ -267,7 +227,7 @@ class RemindMe(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self.remindme_checkfile()
+        await self.check_remindmes_in_db()
 
     @remindme.error
     async def remindme_error(self, context, error):
@@ -278,34 +238,3 @@ async def setup(bot):
     await bot.add_cog(RemindMe(bot))
 
 
-@dataclass(eq=True,frozen=True)
-class Record:
-
-    channelID: int
-    userID: int
-    date: datetime
-    message: str
-
-
-    def __gt__(self, other):
-        if isinstance(other, Record):
-            return self.date > other.date
-
-    def __lt__(self, other):
-        if isinstance(other, Record):
-            return self.date < other.date
-
-    def __ne__(self, other):
-        if isinstance(other, Record):
-            return self.date != other.date
-
-    def __ge__(self, other):
-        if isinstance(other, Record):
-            return self.date >= other.date
-
-    def __le__(self, other):
-        if isinstance(other, Record):
-            return self.date <= other.date
-
-    def to_line(self, separator: str) -> str:
-        return f"{self.channelID}{separator}{self.userID}{separator}{self.date}{separator}{self.message}{separator}"
