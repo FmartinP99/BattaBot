@@ -195,6 +195,16 @@ class RemindMe(commands.Cog):
             await context.send(f"The #{remind_row.id} remindme has been deleted!")
         else:
             await context.send(f"The #{remind_row.id} remindme has not been deleted!")
+    
+    @commands.command(aliases=['clearmyrms'])
+    async def clear_remindmes(self, context: commands.Context):
+        remind_rows = await self.reminderService.get_reminders_by_server_and_user(server_id=context.guild.id, user_id=context.author.id)
+        nowtime  = datetime.now()
+        old_remind_row_ids = [r.id for r in remind_rows if not r.remind_happened and (r.remind_time - nowtime).total_seconds() < 0]
+
+        deleted_rows_num = await self.reminderService.delete_reminders(old_remind_row_ids)
+        await context.send(f"{deleted_rows_num} remindme has been deleted!")
+
 
 
     async def auto_mention(self, sleep_timer: float, server_id: int, channel_id: int, author: int, row_id: int, message: str):
