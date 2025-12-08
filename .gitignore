@@ -4,9 +4,6 @@ __pycache__
 lib/bot/token.0
 token.0
 proba.py
-QuartRoutes/for_the_api.py
-QuartRoutes/for_the_gui.py
-QuartRoutes/quart_routes.py
 Files/coverLocalMusic.jpg
 Files/diagram.png
 Files/reminders.txt

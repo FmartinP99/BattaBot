@@ -1,13 +1,9 @@
 from Database.BaseDb import BaseDb
 from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
-from globals import g_api, g_database, g_websocket_enabled
-from import_routes import battAPP_blueprints
+from globals import g_websocket_enabled
 import asyncio
 from websocketManager import ws_manager
-
-#USING QUART CAUSES THE BOT TO SHUT DOWN IF YOU EDIT ITS SOURCE CODE WHILE IT IS RUNNING
-#DONT TURN ON UNLESS YOU WANT TO HAVE YOUR OWN (FOR NOW)
 
 if g_websocket_enabled:
     from fastapi import FastAPI, WebSocket
@@ -51,24 +47,12 @@ async def notify_frontend(message: str):
 
 
 async def main_run():
-
-        
-    # if g_api is True and g_database:
-    #     from quart import Quart
-    #     battAPP = Quart(__name__)
-
-    #     for blueprint in battAPP_blueprints:
-    #         battAPP.register_blueprint(blueprint)
-
-    #     async with bot:
-    #         bot.loop.create_task(battAPP.run_task(host="0.0.0.0", port=49420))
-    #         await load_extensions()
-    #         await bot.start(token)
+    # if g_database:
     # else:
-        dbHandler: BaseDb = SQLite3Db("Database/files/database.db")
-        dbHandler.connect("Reminders", "Database/files/CreateReminderTable.sql")
-        await load_extensions()
-        await bot.start(token)
+    dbHandler: BaseDb = SQLite3Db("Database/files/database.db")
+    dbHandler.connect("Reminders", "Database/files/CreateReminderTable.sql")
+    await load_extensions()
+    await bot.start(token)
 
 async def main():
     await asyncio.gather(
