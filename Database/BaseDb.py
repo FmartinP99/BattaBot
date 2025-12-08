@@ -31,10 +31,6 @@ class BaseDb(ABC):
        pass
     
     @abstractmethod
-    async def get_all_reminders(self) -> List[RemindRow]:
-        pass
-
-    @abstractmethod
     async def get_reminders(self, server_id: Optional[str], user_id: Optional[str]) -> List[RemindRow]:
        pass
 

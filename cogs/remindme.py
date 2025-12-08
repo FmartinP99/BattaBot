@@ -1,17 +1,12 @@
 from enum import Enum, auto
 from discord.ext import commands
 from datetime import datetime, timedelta
-from dataclasses import dataclass
-from Database.BaseDb import BaseDb
-from Database.Classes.Remind import CreateRemind
+from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner
 import asyncio
 import re
-import os
 import sys
-from discord.ext import tasks
-from Database.SQLite3Db import SQLite3Db
 
 class TimeFormat(Enum):
     FULL_DATE = auto()       # yyyy-mm-dd HH:MM
@@ -25,6 +20,7 @@ class RemindMe(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.reminderService: RemindmeService = RemindmeService()
+        self.scheduled_tasks: dict[int, asyncio.Task] = {}
         
     separator = "|!!|"
 
@@ -81,7 +77,7 @@ class RemindMe(commands.Cog):
 
             elif time_format == TimeFormat.DATE_ONLY:
                 if len(args) == 0:
-                    await context.send("You must provide a time after the date. Example: `12-09 14:30`")
+                    await context.send("You must provide a time after the date. Example: `12-09 14:30` or `2025-12-09 14:30`")
                     return
                 valid_regex = False  # not sure if the regex  yyyy-mm-dd hh:mm  format, and it's not in the past
                 time = time + " " + args[0]
@@ -133,7 +129,61 @@ class RemindMe(commands.Cog):
                 sleep_timer = (set_time - nowtime).total_seconds()
                 await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
                 rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
-                await self.auto_mention(sleep_timer, context.message.guild.id, context.message.channel.id, context.message.author.id, rowId, message_to_send)
+                task = asyncio.create_task(self.auto_mention(
+                    sleep_timer, 
+                    context.message.guild.id, 
+                    context.message.channel.id, 
+                    context.message.author.id, 
+                    rowId, 
+                    message_to_send))
+                
+                self.scheduled_tasks[rowId] = task
+
+    @commands.command(aliases=['getmyrms'])
+    async def get_remindmes_for_user(self, context: commands.Context):
+        remind_rows = await self.reminderService.get_reminders_by_server_and_user(server_id=context.guild.id, user_id=context.author.id)
+        reminder_messages = self.format_reminders_to_discord_batches(remind_rows[:100])
+
+        if len(remind_rows) > 0:
+            await context.channel.send(f"You have {len(remind_rows)} reminder set! The maximum queryable number is 100!")
+
+        for msg in reminder_messages:
+            await context.channel.send(msg)
+            await asyncio.sleep(2)
+
+    @commands.command(aliases=['deleterm', 'removerm'])
+    async def delete_remindme_for_user(self, context: commands.Context, row_id=None):
+        if not row_id:
+            await context.send("You have to provide an id to delete.")
+            return
+        
+        try:
+            row_id = int(row_id)
+        except ValueError:
+            await context.send("The ID must be a valid integer.")
+            return
+        
+        remind_row = await self.reminderService.get_reminder(row_id)
+
+        if not remind_row or int(remind_row.server_id) != context.guild.id:
+            await context.send(f"There is no reminder with the id {row_id}.")
+            return
+        
+        if int(remind_row.user_id) != context.author.id:
+            await context.send("This remindme does not belong to you!")
+            return
+        
+        isDeleted = await self.reminderService.delete_reminder(remind_row.id)
+
+        if isDeleted:
+            message = f"The #${remind_row.id} remindme has been deleted!"
+            task_cancelled = self.cancel_task(remind_row.id)
+            if not task_cancelled:
+                message += "\n The task has not been cancelled since it did not exist."
+            await context.send(f"The #{remind_row.id} remindme has been deleted!")
+        else:
+            await context.send(f"The #{remind_row.id} remindme has not been deleted!")
+
 
     async def auto_mention(self, sleep_timer: float, server_id: int, channel_id: int, author: int, row_id: int, message: str):
         await asyncio.sleep(sleep_timer)
@@ -190,15 +240,15 @@ class RemindMe(commands.Cog):
             sleepTimer = (reminder.remind_time - nowTime).total_seconds()
             if sleepTimer < 0:
                 continue
-            asyncio.create_task(self.auto_mention(sleepTimer, 
+            task = asyncio.create_task(self.auto_mention(sleepTimer, 
                                                   int(reminder.server_id), 
                                                   int(reminder.channel_id), 
                                                   int(reminder.user_id),
                                                   int(reminder.id),
                                                   reminder.remind_text, 
                                                   ))
-        
-
+            
+            self.scheduled_tasks[reminder.id] = task
         
         if len(rows_to_delete) > 0: 
             deleted_row_numbers = await self.reminderService.delete_reminders([r.id for r in rows_to_delete ])
@@ -212,6 +262,45 @@ class RemindMe(commands.Cog):
     async def add_remindme_to_database(self, server_id,  channel_id, user_id, remind_time, remind_text):
         inserted_id = await self.reminderService.add_remindme(server_id,  channel_id, user_id, remind_time, remind_text)
         return inserted_id
+
+    def cancel_task(self, taskId):
+        task = self.scheduled_tasks.pop(taskId, None)
+        if task:
+            task.cancel()  
+            return True
+        return False   
+
+    def format_reminders_to_discord_batches(self, rows: list[RemindRow], batch_size: int = 10) -> list[str]:
+   
+        if not rows:
+            return ["No reminders found."]
+        
+        messages = []
+        current_lines = []
+        for i, row in enumerate(rows, 1):
+            remind_unix = int(row.remind_time.timestamp())
+            status = "✅ Happened" if row.remind_happened else "⏳ Pending"
+            safe_text = row.remind_text.replace("`", "\\`")
+
+            reminder_text = f"**{i}. Reminder #{row.id}** - {status}\n" \
+                f"<t:{remind_unix}:F> (<t:{remind_unix}:R>)\n" \
+                f"<@{row.user_id}> in <#{row.channel_id}>"
+
+            if safe_text:
+                reminder_text += f"\n> {safe_text}"
+
+            current_lines.append(reminder_text)
+
+            # if batch_size reached or next reminder would overflow discord limit
+            if len(current_lines) >= batch_size or sum(len(l) for l in current_lines) > 1900:
+                messages.append("\n".join(current_lines))
+                current_lines = []
+
+        # add any leftover reminders
+        if current_lines:
+            messages.append("\n".join(current_lines))
+
+        return messages
     
     @commands.check(check_owner)
     @commands.command(aliases=['grm'])

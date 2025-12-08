@@ -76,7 +76,7 @@ class SQLite3Db(BaseDb):
         except ValueError:
             return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         
-    def _convert_reminder_to_Remindrow(self, row:sqlite3.Row)-> Optional[RemindRow]:
+    def _convert_reminder_to_remindrow(self, row:sqlite3.Row)-> Optional[RemindRow]:
         if row is None:
             return None
 
@@ -116,36 +116,39 @@ class SQLite3Db(BaseDb):
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM Reminders WHERE ID=?", (reminder_id,))
             row = cursor.fetchone()
-            return self._convert_reminder_to_Remindrow(row)
+            return self._convert_reminder_to_remindrow(row)
 
         return await asyncio.to_thread(sync_get)
-
-  
-    async def get_all_reminders(self) -> List[RemindRow]:
-        def sync_get_all():
-            conn = self.connect()
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM Reminders")
-            rows = cursor.fetchall()
-            if rows is None:
-                return []
-            return [self._convert_reminder_to_Remindrow(row) for row in rows]
-
-        return await asyncio.to_thread(sync_get_all)
-
  
-    async def get_reminders(self, server_id: Optional[str], user_id: Optional[str]) -> List[RemindRow]:
+    async def get_reminders(self, server_id: Optional[str]=None, user_id: Optional[str]=None) -> List[RemindRow]:
         def sync_get_filtered():
             conn = self.connect()
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM Reminders WHERE SERVER_ID=? AND USER_ID=?", (server_id, user_id))
-            rows = cursor.fetchall()
-            if rows is None:
-                return []
+
+            conditions = []
+            params = []
+
+            if server_id is not None:
+                conditions.append("SERVER_ID = ?")
+                params.append(server_id)
+
+            if user_id is not None:
+                conditions.append("USER_ID = ?")
+                params.append(user_id)
+
+            where_clause = ""
+            if conditions:
+                where_clause = " WHERE " + " AND ".join(conditions)
+
+            query = "SELECT * FROM Reminders" + where_clause
+
+            cursor.execute(query, tuple(params))
+            rows = cursor.fetchall() or []
+
             return [
                 reminder
                 for row in rows
-                if (reminder := self._convert_reminder_to_Remindrow(row)) is not None
+                if (reminder := self._convert_reminder_to_remindrow(row)) is not None
             ]
 
         return await asyncio.to_thread(sync_get_filtered)
