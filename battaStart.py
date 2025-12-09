@@ -1,11 +1,12 @@
+from Database.SupabaseDb import SupabaseDb
 from Database.BaseDb import BaseDb
 from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
-from globals import g_websocket_enabled
+from globals import GLOBAL_CONFIGS, DatabaseType
 import asyncio
 from websocketManager import ws_manager
 
-if g_websocket_enabled:
+if GLOBAL_CONFIGS.websocket_enabled:
     from fastapi import FastAPI, WebSocket
     import uvicorn
     app = FastAPI()
@@ -28,7 +29,7 @@ if g_websocket_enabled:
 
 
 async def run_websocket_server():
-    if  g_websocket_enabled:
+    if  GLOBAL_CONFIGS.websocket_enabled:
         config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="info")
         server = uvicorn.Server(config)
         await server.serve()
@@ -45,10 +46,20 @@ async def notify_frontend(message: str):
             connected_clients.remove(ws)
 
 
+async def create_database_handler() -> None:
+    if GLOBAL_CONFIGS.database_type == DatabaseType.SQLITE:
+        db = SQLite3Db("Database/files/database.db")
+        await db.connect("Reminders", "Database/files/CreateReminderTable.sql")
+
+    elif GLOBAL_CONFIGS.database_type == DatabaseType.SUPABASE:
+        db = SupabaseDb(GLOBAL_CONFIGS.supabase_url, GLOBAL_CONFIGS.supabase_key)
+        await db.connect()
+
+    else:
+        raise ValueError("Unsupported database type")
 
 async def main_run():
-    dbHandler: BaseDb = SQLite3Db("Database/files/database.db")
-    dbHandler.connect("Reminders", "Database/files/CreateReminderTable.sql")
+    await create_database_handler()
     await load_extensions()
     await bot.start(token)
 

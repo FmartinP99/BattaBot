@@ -1,59 +1,30 @@
-import sys
-import traceback
-from datetime import datetime
-import re
+from dataclasses import dataclass
+from enum import Enum
+import json
 
-g_cover = ""
-g_ownerid = None
-g_botid = None
-g_localMediaPlayerFolderPath = ""
-g_prefix = ""
-g_ffmpeg = ""
-g_websocket_enabled = False
+class DatabaseType(Enum):
+    SQLITE = "SQLITE"
+    SUPABASE = "SUPABASE"
 
-def set_globals():
-    global g_cover
-    global g_ownerid
-    global g_botid
-    global g_localMediaPlayerFolderPath
-    global g_prefix
-    global g_ffmpeg
-    global g_websocket_enabled
+@dataclass
+class Config:
+    prefix: str
+    owner_id: int
+    bot_id: int
+    cover: str
+    local_media_path: str
+    ffmpeg: str
+    websocket_enabled: bool
+    database_type: DatabaseType
+    supabase_url: str
+    supabase_key: str
 
-    for line in open('Files/globalsDefaultValueImport.txt', 'r', encoding='utf-8'):
-        var = re.search('\"(.*)\"', line).group(1)
+def load_config(path) -> Config:
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-        if line.startswith("COVER"):
-            g_cover = var
+    data["database_type"] = DatabaseType[data["database_type"]]
 
-        elif line.startswith("OWNER_ID"):
-            try:
-                g_ownerid = int(var)
-            except ValueError:
-                raise ValueError("PLEASE PROVIDE YOUR ID AND YOUR BOT ID IN THE globalsDefaultValueImport.txt file")
+    return Config(**data)
 
-
-        elif line.startswith("BOT_ID"):
-            try:
-                g_botid = int(var)
-            except ValueError:
-                raise ValueError("PLEASE PROVIDE YOUR ID AND YOUR BOT ID IN THE globalsDefaultValueImport.txt file")
-
-        elif line.startswith('LOCAL_MEDIAPLAYER_FOLDER_PATH'):
-            g_localMediaPlayerFolderPath = var.replace("\\", "/")
-
-        elif line.startswith('PREFIX'):
-            g_prefix = var
-
-        elif line.startswith("FFMPEG"): 
-            g_ffmpeg = var.replace("\\", "/")
-        
-        elif line.startswith('WEBSOCKET_ENABLED'):
-            if var.lower() == "true":
-                g_websocket_enabled = True
-
-    if g_cover == "":
-        g_cover = "Files/profpiccropped.png"
-
-
-set_globals()
+GLOBAL_CONFIGS = load_config(path="files/config.json")

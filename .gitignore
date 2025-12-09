@@ -9,7 +9,6 @@ Files/diagram.png
 Files/reminders.txt
 Files/profpic.png
 Files/globalsForTheDatabase.txt
-Files/globalsDefaultValueImport.txt
 Files/huntmmr.txt
 database_mongo/db_con__with_other_battabot
 cogs/random.py
@@ -19,5 +18,4 @@ ffmpeg
 .idea
 .venv/
 proba.py
-Files/globalsDefaultValueImport.txt
 cogs/database2.py

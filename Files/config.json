@@ -1,0 +1,12 @@
+{
+  "prefix": ".",
+  "owner_id": 0,
+  "bot_id": 0,
+  "cover": "your path to a cover image",
+  "local_media_path": "your path for a music folder",
+  "ffmpeg": "your path to an  ffmpeg.exe  file",
+  "websocket_enabled": false,
+  "database_type": "SQLITE",
+  "supabase_url": "string",
+  "supabase_key": "string"
+}

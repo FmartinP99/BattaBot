@@ -1,6 +1,6 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from __future__ import annotations
 from Database.Classes.Remind import CreateRemind, RemindRow
 
 class BaseDb(ABC):
@@ -10,10 +10,10 @@ class BaseDb(ABC):
         if cls not in cls._instances:
             instance = super().__new__(cls)
             cls._instances[cls] = instance
-        return cls._instances[cls]
+        return cls._instances[cls]  
 
     @abstractmethod
-    def connect(self):
+    async def connect(self, tableName: Optional[str] = None, sql_file: Optional[str] = None):
         pass
 
     @classmethod

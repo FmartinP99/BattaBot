@@ -6,7 +6,7 @@ import tracemoepy
 from tracemoepy.errors import TooManyRequests
 import sys
 from botMain import prefix, IS_BOT_READY
-from globals import g_botid
+from globals import GLOBAL_CONFIGS
 from dataclasses import dataclass
 
 
@@ -167,7 +167,7 @@ class MalSearch(commands.Cog):
 
         malSearchAttributes = self.malSearchAttributes[reaction.message.guild.id]
         reactions = {f'{i}\u20e3': i for i in range(len(malSearchAttributes.titles))}
-        if user.id != g_botid:
+        if user.id != GLOBAL_CONFIGS.bot_id:
             try:
                 malSearchAttributesMessageId = malSearchAttributes.traceMoeMessage.id
                 if malSearchAttributesMessageId == reaction.message.id:

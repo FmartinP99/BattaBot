@@ -7,7 +7,7 @@ class CreateRemind:
     server_id: str
     channel_id: str
     user_id: str
-    remind_time: str
+    remind_time: datetime
     remind_text: str
     remind_happened: int
 

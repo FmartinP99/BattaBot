@@ -2,7 +2,7 @@ import sys
 from discord.ext import commands
 from botMain import prefix
 import discord
-from globals import g_cover, g_botid
+from globals import GLOBAL_CONFIGS
 from botMain import IS_BOT_READY
 
 class HelpCommandAttributes():
@@ -80,7 +80,7 @@ class HelpCommandAttributes():
 class HelpCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.g_cover = g_cover
+        self.g_cover = GLOBAL_CONFIGS.cover
         self.helpBots = {}
 
         if IS_BOT_READY and not self.helpBots:
@@ -133,7 +133,7 @@ class HelpCommands(commands.Cog):
 
         reactions = {f'{i}\u20e3': i for i in range(len(helpBot.embedList))}
 
-        if user.id != g_botid:
+        if user.id != GLOBAL_CONFIGS.bot_id:
             try:
                 if helpBot.helpMessage.id == reaction.message.id:
                     helpBot.helpListaIndex = reactions.get(reaction.emoji, None)
@@ -261,7 +261,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def play(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Play',
                            description="Plays a video from youtube.",
                            color=0x71368a)
@@ -285,7 +285,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def lp_searchlist(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Now playing',
                            description="Lists the musics via the name (max:24 per page) .\n'*' lists everything. (up to 192)\n\n"
                                        "Sent messages will be deleted automatically after a few seconds.\nUse '-stay' at the end of the message to make it stay.",
@@ -300,7 +300,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def now_playing(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Now playing',
                            description="Displays the current music.",
                            color=0x71368a)
@@ -314,7 +314,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def setpath(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Setpath',
                            description="Set the path to play the musics (OWNER ONLY)",
                            color=0x71368a)
@@ -326,7 +326,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def skip(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Skip',
                            description="Skips the playlist to an exact index if a number is given, if not, it skips forward one.",
                            color=0x71368a)
@@ -340,7 +340,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def prev(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Prev',
                            description="Goes to the previous song",
                            color=0x71368a)
@@ -352,7 +352,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def stop(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Stop',
                            description="Disconnects battabot from the voicechat.",
                            color=0x71368a)
@@ -364,7 +364,7 @@ class HelpCommands(commands.Cog):
 
     @help.command()
     async def shuffle(self, context):
-        file = discord.File(g_cover, filename="cover.jpg")
+        file = discord.File(GLOBAL_CONFIGS.cover, filename="cover.jpg")
         em = discord.Embed(title='Shuffle',
                            description="Shuffles the playlist",
                            color=0x71368a)

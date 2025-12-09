@@ -6,7 +6,7 @@ from typing import Optional
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 import os
-from globals import g_cover, g_localMediaPlayerFolderPath, g_ffmpeg, g_botid
+from globals import GLOBAL_CONFIGS
 from discord.ext import commands
 from botMain import check_owner, IS_BOT_READY
 import discord
@@ -85,7 +85,7 @@ class PlayerAttributes:
 
     def __init__(self):
 
-        self.mediaplayer_path: str = g_localMediaPlayerFolderPath
+        self.mediaplayer_path: str = GLOBAL_CONFIGS.local_media_path
   
         self.current: Playing = Playing(isPlaying=False)
         self.musics: dict[int, Music] = {}
@@ -191,7 +191,7 @@ class Player(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.cover = g_cover
+        self.cover = GLOBAL_CONFIGS.cover
         self.mediaBots: dict[int, PlayerAttributes] = {}
 
         if IS_BOT_READY and len(self.mediaBots) == 0:
@@ -302,7 +302,7 @@ class Player(commands.Cog):
             self._send_ws_notification_on_paylist_state_change(guildId)
          
 
-            voice.play(discord.FFmpegOpusAudio(executable=f"{g_ffmpeg}",
+            voice.play(discord.FFmpegOpusAudio(executable=f"{GLOBAL_CONFIGS.ffmpeg}",
                                                 source=f"{mediaBot.mediaplayer_path}/{mediaBot.musics[mediaBot.current.music.index].filename}", bitrate=320),
                         after=mediaBot.after_play_ref)
             
@@ -491,7 +491,7 @@ class Player(commands.Cog):
         if mediaBot.playlistMessage.id != reaction.message.id:
             return
         
-        if user.id != g_botid:
+        if user.id != GLOBAL_CONFIGS.bot_id:
             try:
                 context = await self.bot.get_context(reaction.message)
 

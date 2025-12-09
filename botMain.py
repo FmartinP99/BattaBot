@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from globals import  g_prefix, g_ownerid, g_ffmpeg, g_websocket_enabled
+from globals import GLOBAL_CONFIGS
 import os
 import traceback
 
@@ -13,8 +13,9 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.presences = True
-bot = commands.Bot(command_prefix=f'{g_prefix}', help_command=None, intents=intents)
-prefix = g_prefix
+prefix = GLOBAL_CONFIGS.prefix
+bot = commands.Bot(command_prefix=f'{prefix}', help_command=None, intents=intents)
+
 
 IS_BOT_READY = False
 
@@ -22,7 +23,7 @@ with open("token.0", "r", encoding="utf-8") as tf:
     token = tf.read()
 
 def check_owner(context):
-    return context.author.id == g_ownerid
+    return context.author.id == GLOBAL_CONFIGS.owner_id
 
 
 @bot.event
@@ -58,9 +59,9 @@ async def on_command_error(context, error):   # triggers at every error
         print(error)
         traceback.print_exc()
 
-if len(g_ffmpeg) == 0:
+if len(GLOBAL_CONFIGS.ffmpeg) == 0:
     PROTECTED_MODULES_FROM_LOADING.append('player')
-    print("There is no FFMPEG path in globalsDefaultValueImport.txt")
+    print("There is no FFMPEG path in the config file")
 
 
 async def load_extensions():
@@ -69,13 +70,13 @@ async def load_extensions():
     for filename in os.listdir('./cogs/'):
         if filename.endswith('.py') and not filename.endswith("database2.py"):
             if filename == "websocket.py":
-                if g_websocket_enabled is True:
+                if GLOBAL_CONFIGS.websocket_enabled is True:
                     await bot.load_extension(f'cogs.{filename[:-3]}')
                     print(f" <{filename[:-3]}> module loaded!")
                 else:
                     print("The websocket is turned off!!")
             else:
-                if filename != "player.py" or (filename == "player.py" and len(g_ffmpeg) > 0):
+                if filename != "player.py" or (filename == "player.py" and len(GLOBAL_CONFIGS.ffmpeg) > 0):
                     await bot.load_extension(f'cogs.{filename[:-3]}')
                     print(f" <{filename[:-3]}> module loaded!")
     print("Modules are loaded!")

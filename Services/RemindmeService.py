@@ -1,13 +1,11 @@
 from typing import List, Optional
-from Database.BaseDb import BaseDb
 from Database.Classes.Remind import CreateRemind, RemindRow
-from Database.SQLite3Db import SQLite3Db
+from Services.BaseService import BaseService
 
-
-class RemindmeService:
+class RemindmeService(BaseService):
 
     def __init__(self,):
-        self.databaseHandler: BaseDb = SQLite3Db.get_instance() # to-do: branch this if it will support multiple database classes.
+         super().__init__()
 
     async def add_remindme(self, server_id,  channel_id, user_id, remind_time, remind_text) -> int:
         row: CreateRemind = CreateRemind(

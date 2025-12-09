@@ -38,54 +38,20 @@ class RemindMe(commands.Cog):
 
         _split_char_index = time.find(':')
 
-        # check if 03:00 or 3:00 and make it 03:00
-
-        if ":" not in time:
-            await context.send("Invalid time format. Use HH:MM or H:MM.")
-            return
-
-        hours, minutes = time.split(":", 1)
-
-        # pad single-digit hours
-        if len(hours) == 1:
-            hours = "0" + hours
-
-        # pad minutes 
-        if len(minutes) == 1:
-            minutes = "0" + minutes
-
-        time = f"{hours}:{minutes}"
         time_format = self.regexes(time)
 
-        if time_format == TimeFormat.INVALID:
-            await context.send("The format of the time is wrong!")
-            return
-        else:
-            if time_format == TimeFormat.TIME_ONLY:
-                message_to_send = ' '.join(args)
+        if time_format == TimeFormat.NUMBER and (str(args[0]).startswith("+")):
+            set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, _Second, _Microsecond) + timedelta(minutes=int(time))
+            message_to_send = ' '.join(args)
+            message_to_send = message_to_send[1:]  # cuts the "+"
+            valid_regex = True
 
-                __Hour = int(time[:2])
-                __Minute = int(time[3:5])
+        if not valid_regex and time_format != TimeFormat.DATE_ONLY and ":" not in time:
+                await context.send("Invalid time format. Use HH:MM or H:MM.")
+                return
 
-                if __Hour > _Hour or (__Hour == _Hour and __Minute > _Minute):
-                    set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond)
-                    valid_regex = True
-
-                elif __Hour < _Hour or (__Hour == _Hour and __Minute <= _Minute):
-                    set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond) + timedelta(days=1)
-                    valid_regex = True
-
-                else:
-                    await context.send("I can't ping you in the past.")
-
-            elif time_format == TimeFormat.NUMBER and (str(args[0]).startswith("+")):
-                set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, _Second, _Microsecond) + timedelta(minutes=int(time))
-                message_to_send = ' '.join(args)
-                message_to_send = message_to_send[1:]  # cuts the "+"
-                valid_regex = True
-
-
-            elif time_format == TimeFormat.DATE_ONLY:
+        if not valid_regex:
+            if time_format == TimeFormat.DATE_ONLY:
                 if len(args) == 0:
                     await context.send("You must provide a time after the date. Example: `12-09 14:30` or `2025-12-09 14:30`")
                     return
@@ -131,23 +97,56 @@ class RemindMe(commands.Cog):
                     print(sys.exc_info())
                     await context.send("The format of the time is wrong!")
 
-            else:
-                await context.send("The format of the time is wrong!")
-                sys.exc_info()
+            if not valid_regex:
+                hours, minutes = time.split(":", 1)
 
-            if valid_regex is True:
-                sleep_timer = (set_time - nowtime).total_seconds()
-                await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
-                rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
-                task = asyncio.create_task(self.auto_mention(
-                    sleep_timer, 
-                    context.message.guild.id, 
-                    context.message.channel.id, 
-                    context.message.author.id, 
-                    rowId, 
-                    message_to_send))
-                
-                self.scheduled_tasks[rowId] = task
+                # pad single-digit hours
+                if len(hours) == 1:
+                    hours = "0" + hours
+
+                # pad minutes 
+                if len(minutes) == 1:
+                    minutes = "0" + minutes
+
+                time = f"{hours}:{minutes}"
+                time_format = self.regexes(time)
+
+                if time_format == TimeFormat.INVALID:
+                    await context.send("The format of the time is wrong!")
+                    return
+                else:
+                    if time_format == TimeFormat.TIME_ONLY:
+                        message_to_send = ' '.join(args)
+
+                        __Hour = int(time[:2])
+                        __Minute = int(time[3:5])
+
+                        if __Hour > _Hour or (__Hour == _Hour and __Minute > _Minute):
+                            set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond)
+                            valid_regex = True
+
+                        elif __Hour < _Hour or (__Hour == _Hour and __Minute <= _Minute):
+                            set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond) + timedelta(days=1)
+                            valid_regex = True
+                        else:
+                            await context.send("I can't ping you in the past.")
+                    else:
+                        await context.send("The format of the time is wrong!")
+                        sys.exc_info()
+
+        if valid_regex is True:
+            sleep_timer = (set_time - nowtime).total_seconds()
+            await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
+            rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
+            task = asyncio.create_task(self.auto_mention(
+                sleep_timer, 
+                context.message.guild.id, 
+                context.message.channel.id, 
+                context.message.author.id, 
+                rowId, 
+                message_to_send))
+            
+            self.scheduled_tasks[rowId] = task
 
     @commands.command(aliases=['getmyrms'])
     async def get_remindmes_for_user(self, context: commands.Context):
