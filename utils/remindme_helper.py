@@ -11,7 +11,7 @@ class TimeFormat(Enum):
     NUMBER = auto()                 # integer
     INVALID = auto()
 
-def get_remindme_datetime_and_message(*args) -> tuple[Optional[datetime], str]:
+def get_remindme_datetime_and_message(nowtime, *args) -> tuple[Optional[datetime], str]:
 
     print(args)
     mode = args[0]
@@ -19,8 +19,6 @@ def get_remindme_datetime_and_message(*args) -> tuple[Optional[datetime], str]:
 
     if regex_res_mode == TimeFormat.INVALID:
         return (None, "Invalid Time Format.")
-
-    now_time = datetime.now()
 
     #1 - ('some number', '+', 'msg1', 'msg2' etc)
     if(regex_res_mode == TimeFormat.NUMBER and args[1] != "+" or regex_res_mode != TimeFormat.NUMBER and args[1] == "+"):
@@ -30,14 +28,14 @@ def get_remindme_datetime_and_message(*args) -> tuple[Optional[datetime], str]:
         message_to_send = ' '.join(args[1:])
         message_to_send = message_to_send[2:]  # cuts the "+"
         minutes = int(mode)
-        return (now_time + timedelta(minutes=minutes), message_to_send)
+        return (nowtime + timedelta(minutes=minutes), message_to_send)
     
     #2 - ('20:30', 'msg1', 'msg2' etc)
     if(regex_res_mode == TimeFormat.TIME_ONLY):
         message_to_send = ' '.join(args[1:])
         hour, minute = map(int, mode.split(":"))
-        target_time = now_time.replace(hour=hour, minute=minute, second=0, microsecond=0)
-        if target_time <= now_time:
+        target_time = nowtime.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if target_time <= nowtime:
             target_time = target_time + timedelta(days=1)
         return (target_time, message_to_send)
     
@@ -55,15 +53,15 @@ def get_remindme_datetime_and_message(*args) -> tuple[Optional[datetime], str]:
         #either FULL_DATE_TIME or DATE_TIME_NO_YEAR
         datetime_regex = _check_timeformat_regexes(date_time)
 
-        target_time = now_time
+        target_time = nowtime
         if datetime_regex == TimeFormat.FULL_DATE_TIME:
             year, month, day = map(int, mode.split("-"))
-            target_time = now_time.replace(year=year, month=month, day=day, hour=hour, minute=minute)
+            target_time = nowtime.replace(year=year, month=month, day=day, hour=hour, minute=minute)
         elif datetime_regex == TimeFormat.DATE_TIME_NO_YEAR:
             month, day = map(int, mode.split("-"))
-            target_time = now_time.replace(month=month, day=day, hour=hour, minute=minute)
+            target_time = nowtime.replace(month=month, day=day, hour=hour, minute=minute)
 
-        if target_time <= now_time:
+        if target_time <= nowtime:
             target_time = target_time.replace(year=target_time.year + 1)
 
         return (target_time, message_to_send)

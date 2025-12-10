@@ -16,7 +16,7 @@ class RemindMe(commands.Cog):
     async def remindme(self, context: commands.Context, *args):
         
         nowtime = datetime.now()
-        set_time, message_to_send = get_remindme_datetime_and_message(*args)
+        set_time, message_to_send = get_remindme_datetime_and_message(nowtime, *args)
 
         if set_time is None:
             await context.send(message_to_send)
