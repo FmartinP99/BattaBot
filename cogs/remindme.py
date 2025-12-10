@@ -154,7 +154,10 @@ class RemindMe(commands.Cog):
         reminder_messages = self.format_reminders_to_discord_batches(remind_rows[:100])
 
         if len(remind_rows) > 0:
-            await context.channel.send(f"You have {len(remind_rows)} reminder set! The maximum queryable number is 100!")
+            msg = f"You have {len(remind_rows)} reminders!"
+            if len(remind_rows) > 100:
+                msg += " The maximum queryable number is 100!"
+            await context.channel.send(msg)
 
         for msg in reminder_messages:
             await context.channel.send(msg)
@@ -294,9 +297,10 @@ class RemindMe(commands.Cog):
         
         messages = []
         current_lines = []
+        nowtime = datetime.now()
         for i, row in enumerate(rows, 1):
             remind_unix = int(row.remind_time.timestamp())
-            status = "✅ Happened" if row.remind_happened else "⏳ Pending"
+            status = "✅ Happened" if row.remind_happened else "❌ Due past" if not row.remind_happened and row.remind_time < nowtime else "⏳ Pending"
             safe_text = row.remind_text.replace("`", "\\`")
 
             reminder_text = f"**{i}. Reminder #{row.id}** - {status}\n" \

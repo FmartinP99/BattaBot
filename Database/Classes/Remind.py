@@ -24,7 +24,8 @@ class RemindRow:
     remind_happened: bool  # 0 or 1
 
     def __str__(self) -> str:
-        status = "✅ Done" if self.remind_happened else "⏳ Pending"
+        nowtime = datetime.now()
+        status = "✅ Happened" if self.remind_happened else "❌ Due past" if not self.remind_happened and self.remind_time < nowtime else "⏳ Pending"
         return (
             f"Reminder ID: {self.id}\n"
             f"Server: {self.server_id} | Channel: {self.channel_id} | User: {self.user_id}\n"

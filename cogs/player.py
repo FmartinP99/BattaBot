@@ -32,9 +32,10 @@ class Music:
 class Playing:
 
     def __init__(self, isPlaying: bool):
+        self._debounce_task = None
         self.isPlaying: bool = isPlaying
         self.music: Optional[Music] = None
-        self.modifiedAt: float = field(default_factory=lambda: time.time(), init=False)
+        self.modifiedAt: float = time.time()
         self.playedDuration: int = 0
 
         self._loop_task = self._increment_loop.start()
@@ -43,10 +44,9 @@ class Playing:
 
     @tasks.loop(seconds=1)
     async def _increment_loop(self):
-        print("increment loop called")
         if self.isPlaying:
             self.playedDuration += 1
-            print(self.playedDuration)
+            print(f"{self.music.title} -> {self.playedDuration} / {self.music.length}")
 
     @_increment_loop.before_loop
     async def before_loop(self):
@@ -61,8 +61,22 @@ class Playing:
             super().__setattr__("playedDuration", 0)
 
         if name == "isPlaying":
-            self.update_loop_state()
+            print(value)
+            self._debounce_update_loop_state()
 
+    def _debounce_update_loop_state(self, delay=0.15):
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
+
+        self._debounce_task = asyncio.create_task(self._debounced(delay))
+
+    async def _debounced(self, delay):
+        try:
+            await asyncio.sleep(delay)
+            self.update_loop_state()
+        except asyncio.CancelledError:
+            pass
+    
     def update_loop_state(self):
         if self.isPlaying:
             if not self._increment_loop.is_running():
@@ -78,8 +92,6 @@ class Playing:
             "modifiedAt": self.modifiedAt,
             "playedDuration": self.playedDuration,
         }
-
-
 
 class PlayerAttributes:
 
@@ -297,8 +309,6 @@ class Player(commands.Cog):
                     )
                 )
 
-            print("plaY_music called with newIndex: " + str(newIndex))
-           
             self._send_ws_notification_on_paylist_state_change(guildId)
          
 
