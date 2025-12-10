@@ -6,7 +6,13 @@ class DatabaseType(Enum):
     SQLITE = "SQLITE"
     SUPABASE = "SUPABASE"
 
-@dataclass
+@dataclass(frozen=True)
+class WebsocketConfig:
+    ip: str
+    port: str
+    log_level: str
+
+@dataclass(frozen=True)
 class Config:
     prefix: str
     owner_id: int
@@ -18,12 +24,16 @@ class Config:
     database_type: DatabaseType
     supabase_url: str
     supabase_key: str
+    websocket_config: WebsocketConfig
 
 def load_config(path) -> Config:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     data["database_type"] = DatabaseType[data["database_type"]]
+    
+    ws_cfg = WebsocketConfig(**data["websocket_config"])
+    data["websocket_config"] = ws_cfg
 
     return Config(**data)
 

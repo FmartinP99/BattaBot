@@ -1,12 +1,10 @@
 import discord
 from discord.ext import commands
-from globals import GLOBAL_CONFIGS
+from global_config import GLOBAL_CONFIGS
 import os
 import traceback
 
 PROTECTED_MODULES = ["module_control"]  # can't unload these
-
-# can't load <remindme> because the async control will be duplicated each time it is loaded since it works with asyncio.sleep
 PROTECTED_MODULES_FROM_LOADING = ["remindme"]
 
 intents = discord.Intents.default()

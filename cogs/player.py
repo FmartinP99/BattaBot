@@ -7,7 +7,7 @@ from typing import Optional
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 import os
-from globals import GLOBAL_CONFIGS
+from global_config import GLOBAL_CONFIGS
 from discord.ext import commands
 from botMain import check_owner, IS_BOT_READY
 import discord

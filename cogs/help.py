@@ -2,7 +2,7 @@ import sys
 from discord.ext import commands
 from botMain import prefix
 import discord
-from globals import GLOBAL_CONFIGS
+from global_config import GLOBAL_CONFIGS
 from botMain import IS_BOT_READY
 
 class HelpCommandAttributes():

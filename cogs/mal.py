@@ -6,7 +6,7 @@ import tracemoepy
 from tracemoepy.errors import TooManyRequests
 import sys
 from botMain import prefix, IS_BOT_READY
-from globals import GLOBAL_CONFIGS
+from global_config import GLOBAL_CONFIGS
 from dataclasses import dataclass
 
 

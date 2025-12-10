@@ -4,9 +4,14 @@
   "bot_id": 0,
   "cover": "your path to a cover image",
   "local_media_path": "your path for a music folder",
-  "ffmpeg": "your path to an  ffmpeg.exe  file",
+  "ffmpeg": "your path to an ffmpeg.exe file",
   "websocket_enabled": false,
   "database_type": "SQLITE",
   "supabase_url": "string",
-  "supabase_key": "string"
+  "supabase_key": "string",
+  "websocket_config": {
+    "ip": "127.0.0.1",
+    "port": 8000,
+    "log_level": "info"
+  }
 }

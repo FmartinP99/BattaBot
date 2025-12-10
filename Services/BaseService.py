@@ -1,7 +1,7 @@
 from Database.SupabaseDb import SupabaseDb
 from Database.BaseDb import BaseDb
 from Database.SQLite3Db import SQLite3Db
-from globals import GLOBAL_CONFIGS, DatabaseType
+from global_config import GLOBAL_CONFIGS, DatabaseType
 
 
 class BaseService:

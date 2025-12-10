@@ -2,7 +2,7 @@ from Database.SupabaseDb import SupabaseDb
 from Database.BaseDb import BaseDb
 from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
-from globals import GLOBAL_CONFIGS, DatabaseType
+from global_config import GLOBAL_CONFIGS, DatabaseType
 import asyncio
 from websocketManager import ws_manager
 
@@ -14,7 +14,6 @@ if GLOBAL_CONFIGS.websocket_enabled:
 
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket):
-
         await ws_manager.connect(ws)
         try:
             while True:
@@ -30,20 +29,9 @@ if GLOBAL_CONFIGS.websocket_enabled:
 
 async def run_websocket_server():
     if  GLOBAL_CONFIGS.websocket_enabled:
-        config = uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="info")
+        config = uvicorn.Config(app, host=GLOBAL_CONFIGS.websocket_config.ip, port=GLOBAL_CONFIGS.websocket_config.port, log_level=GLOBAL_CONFIGS.websocket_config.log_level)
         server = uvicorn.Server(config)
         await server.serve()
-
-
-
-async def notify_frontend(message: str):
-    for ws in list(connected_clients):
-        try:
-            print("message sent")
-            await ws.send_text(message)
-        except Exception:
-            print("error while sending message")
-            connected_clients.remove(ws)
 
 
 async def create_database_handler() -> None:
@@ -54,7 +42,6 @@ async def create_database_handler() -> None:
     elif GLOBAL_CONFIGS.database_type == DatabaseType.SUPABASE:
         db = SupabaseDb(GLOBAL_CONFIGS.supabase_url, GLOBAL_CONFIGS.supabase_key)
         await db.connect()
-
     else:
         raise ValueError("Unsupported database type")
 
