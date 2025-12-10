@@ -46,6 +46,17 @@ class RemindMe(commands.Cog):
             message_to_send = message_to_send[1:]  # cuts the "+"
             valid_regex = True
 
+        if not valid_regex and time_format == TimeFormat.TIME_ONLY:
+            (hour, minutes) = time.split(":")
+            __Hour = int(hour)
+            __Minute = int(minutes)
+            if __Hour > _Hour or (__Hour == _Hour and __Minute > _Minute):
+                set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond)
+            else:
+                set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond) + timedelta(days=1)
+            message_to_send = ' '.join(args)
+            valid_regex = True
+
         if not valid_regex and time_format != TimeFormat.DATE_ONLY and ":" not in time:
                 await context.send("Invalid time format. Use HH:MM or H:MM.")
                 return
