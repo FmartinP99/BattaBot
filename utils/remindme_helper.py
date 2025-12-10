@@ -13,7 +13,6 @@ class TimeFormat(Enum):
 
 def get_remindme_datetime_and_message(nowtime, *args) -> tuple[Optional[datetime], str]:
 
-    print(args)
     mode = args[0]
     regex_res_mode = _check_timeformat_regexes(mode)
 
