@@ -1,20 +1,10 @@
-from enum import Enum, auto
 from discord.ext import commands
-from datetime import datetime, timedelta
+from datetime import datetime
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner
 import asyncio
-import re
-import sys
-
-class TimeFormat(Enum):
-    FULL_DATE = auto()       # yyyy-mm-dd HH:MM
-    DATE_NO_YEAR = auto()    # mm-dd HH:MM
-    DATE_ONLY = auto()       # yyyy-mm-dd or mm-dd
-    TIME_ONLY = auto()       # HH:MM
-    NUMBER = auto()          # integer
-    INVALID = auto()
+from utils.remindme_helper import get_remindme_datetime_and_message
 
 class RemindMe(commands.Cog):
     def __init__(self, bot):
@@ -23,140 +13,26 @@ class RemindMe(commands.Cog):
         self.scheduled_tasks: dict[int, asyncio.Task] = {}
         
     @commands.command(aliases=['rm'])
-    async def remindme(self, context, time, *args):
+    async def remindme(self, context: commands.Context, *args):
+        
         nowtime = datetime.now()
-        _Year = nowtime.year
-        _Month = nowtime.month
-        _Day = nowtime.day
-        _Hour = nowtime.hour
-        _Minute = nowtime.minute
-        _Second = nowtime.second
-        _Microsecond = nowtime.microsecond
+        set_time, message_to_send = get_remindme_datetime_and_message(*args)
 
-        valid_regex = False
-        message_to_send = ""
+        if set_time is None:
+            await context.send(message_to_send)
+            return
 
-        _split_char_index = time.find(':')
-
-        time_format = self.regexes(time)
-
-        if time_format == TimeFormat.NUMBER and (str(args[0]).startswith("+")):
-            set_time = datetime(_Year, _Month, _Day, _Hour, _Minute, _Second, _Microsecond) + timedelta(minutes=int(time))
-            message_to_send = ' '.join(args)
-            message_to_send = message_to_send[1:]  # cuts the "+"
-            valid_regex = True
-
-        if not valid_regex and time_format == TimeFormat.TIME_ONLY:
-            (hour, minutes) = time.split(":")
-            __Hour = int(hour)
-            __Minute = int(minutes)
-            if __Hour > _Hour or (__Hour == _Hour and __Minute > _Minute):
-                set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond)
-            else:
-                set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond) + timedelta(days=1)
-            message_to_send = ' '.join(args)
-            valid_regex = True
-
-        if not valid_regex and time_format != TimeFormat.DATE_ONLY and ":" not in time:
-                await context.send("Invalid time format. Use HH:MM or H:MM.")
-                return
-
-        if not valid_regex and time_format == TimeFormat.DATE_ONLY:
-            if len(args) == 0:
-                await context.send("You must provide a time after the date. Example: `12-09 14:30` or `2025-12-09 14:30`")
-                return
-            valid_regex = False  # not sure if the regex  yyyy-mm-dd hh:mm  format, and it's not in the past
-            time = time + " " + args[0]
-
-            _split_char_index = time.find(':')
-
-            if time[_split_char_index - 2] == " ":
-                time = time[:_split_char_index - 1] + "0" + time[_split_char_index - 1:]
-
-            try:
-                time_format = self.regexes(time)
-                if time_format == TimeFormat.FULL_DATE or time_format == TimeFormat.DATE_NO_YEAR:
-                    message_to_send = ""
-                    if len(args) > 0:
-                        message_to_send = ' '.join(args[1:])
-
-                    if time_format == TimeFormat.FULL_DATE:
-                        __Year = int(time[0:4])
-                        __Month = int(time[5:7])
-                        __Day = int(time[8:10])
-                        __Hour = int(time[11:13])
-                        __Minute = int(time[14:16])
-                        set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-                    else:
-                        __Year = nowtime.year
-                        __Month = int(time[0:2])
-                        __Day = int(time[3:5])
-                        __Hour = int(time[6:8])
-                        __Minute = int(time[9:11])
-                        set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-                        if set_time < nowtime:
-                            set_time = datetime(__Year + 1, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-
-                    if set_time > nowtime:
-                        valid_regex = True
-                    else:
-                        await context.send("I can't ping you in the past.")
-                else:
-                    await context.send("The format of the time is wrong!")
-            except Exception:
-                print(sys.exc_info())
-                await context.send("The format of the time is wrong!")
-
-            if not valid_regex:
-                hours, minutes = time.split(":", 1)
-
-                # pad single-digit hours
-                if len(hours) == 1:
-                    hours = "0" + hours
-
-                # pad minutes 
-                if len(minutes) == 1:
-                    minutes = "0" + minutes
-
-                time = f"{hours}:{minutes}"
-                time_format = self.regexes(time)
-
-                if time_format == TimeFormat.INVALID:
-                    await context.send("The format of the time is wrong!")
-                    return
-                else:
-                    if time_format == TimeFormat.TIME_ONLY:
-                        message_to_send = ' '.join(args)
-
-                        __Hour = int(time[:2])
-                        __Minute = int(time[3:5])
-
-                        if __Hour > _Hour or (__Hour == _Hour and __Minute > _Minute):
-                            set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond)
-                            valid_regex = True
-
-                        elif __Hour < _Hour or (__Hour == _Hour and __Minute <= _Minute):
-                            set_time = datetime(_Year, _Month, _Day, __Hour, __Minute, 0, _Microsecond) + timedelta(days=1)
-                            valid_regex = True
-                        else:
-                            await context.send("I can't ping you in the past.")
-                    else:
-                        await context.send("The format of the time is wrong!")
-                        sys.exc_info()
-
-        if valid_regex is True:
-            sleep_timer = (set_time - nowtime).total_seconds()
-            await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
-            rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
-            task = asyncio.create_task(self.auto_mention(
-                sleep_timer, 
-                context.message.guild.id, 
-                context.message.channel.id, 
-                context.message.author.id, 
-                rowId, 
-                message_to_send))
-            
-            self.scheduled_tasks[rowId] = task
+        sleep_timer = (set_time - nowtime).total_seconds()
+        await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
+        rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
+        task = asyncio.create_task(self.auto_mention(
+            sleep_timer, 
+            context.message.guild.id, 
+            context.message.channel.id, 
+            context.message.author.id, 
+            rowId, 
+            message_to_send))
+        self.scheduled_tasks[rowId] = task
 
     @commands.command(aliases=['getmyrms'])
     async def get_remindmes_for_user(self, context: commands.Context):
@@ -236,25 +112,6 @@ class RemindMe(commands.Cog):
             content += f"\n{msg}"
         await channel.send(content)
         await self.reminderService.update_reminder_reminded_column(row_id, True)
-
-    def regexes(self, time: str) -> TimeFormat:
-
-        if re.match(r'([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9])', time):
-            return TimeFormat.FULL_DATE
-
-        elif re.match(r'((0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))\s((0[0-9]|1[0-9]|2[0-4]):[0-5][0-9])', time):
-            return TimeFormat.DATE_NO_YEAR
-
-        elif re.match(r'(([12]\d{3}-)?(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))', time):
-            return TimeFormat.DATE_ONLY
-
-        elif re.match(r'^[0-2]?[0-9]:[0-5][0-9]$', time):
-            return TimeFormat.TIME_ONLY
-
-        elif re.match(r'^[1-9][0-9]{0,3}$', time):
-            return TimeFormat.NUMBER
-
-        return TimeFormat.INVALID
 
     async def check_remindmes_in_db(self):
 
