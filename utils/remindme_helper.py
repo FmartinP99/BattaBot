@@ -11,7 +11,7 @@ class TimeFormat(Enum):
     NUMBER = auto()                 # integer
     INVALID = auto()
 
-def get_remindme_datetime_and_message(nowtime, *args) -> tuple[Optional[datetime], str]:
+def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optional[datetime], str]:
 
     mode = args[0]
     regex_res_mode = _check_timeformat_regexes(mode)
