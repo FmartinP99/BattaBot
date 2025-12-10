@@ -1,4 +1,5 @@
 import asyncio
+import threading
 from discord.ext import tasks
 from dataclasses import dataclass, field
 import random
@@ -32,15 +33,43 @@ class Music:
 class Playing:
 
     def __init__(self, isPlaying: bool):
-        self._debounce_task = None
+        self._initializing = True
+
+        self._debounce_timer = None
         self.isPlaying: bool = isPlaying
         self.music: Optional[Music] = None
         self.modifiedAt: float = time.time()
         self.playedDuration: int = 0
+        self._increment_loop.start()
 
-        self._loop_task = self._increment_loop.start()
-        self.isPlaying = self.isPlaying #hack reassign, so the self.increment_loop will behave according to the internal isPlaying's state.
-       
+        self._initializing = False
+
+    def __setattr__(self, name, value):
+        # normal field update
+        super().__setattr__(name, value)
+        # whenever we update the music, the modifiedAt also changes.
+        if name == "music":
+            super().__setattr__("modifiedAt", time.time())
+            super().__setattr__("playedDuration", 0)
+
+        if name == "isPlaying" and not self._initializing:
+            print(value)
+            self._debounce_update_loop_state()
+
+    def _debounce_update_loop_state(self, delay=0.15):
+        if self._debounce_timer is not None:
+            self._debounce_timer.cancel()
+
+        self._debounce_timer = threading.Timer(delay, self._update_loop_state)
+        self._debounce_timer.start()
+
+    def _update_loop_state(self):
+        if self.isPlaying:
+            if not self._increment_loop.is_running():
+                self._increment_loop.start()
+        else:
+            if self._increment_loop.is_running():
+                self._increment_loop.stop()
 
     @tasks.loop(seconds=1)
     async def _increment_loop(self):
@@ -51,39 +80,6 @@ class Playing:
     @_increment_loop.before_loop
     async def before_loop(self):
         await asyncio.sleep(0)
-
-    def __setattr__(self, name, value):
-        # normal field update
-        super().__setattr__(name, value)
-        # whenever we update the music, the modifiedAt also changes.
-        if name == "music":
-            super().__setattr__("modifiedAt", time.time())
-            super().__setattr__("playedDuration", 0)
-
-        if name == "isPlaying":
-            print(value)
-            self._debounce_update_loop_state()
-
-    def _debounce_update_loop_state(self, delay=0.15):
-        if self._debounce_task and not self._debounce_task.done():
-            self._debounce_task.cancel()
-
-        self._debounce_task = asyncio.create_task(self._debounced(delay))
-
-    async def _debounced(self, delay):
-        try:
-            await asyncio.sleep(delay)
-            self.update_loop_state()
-        except asyncio.CancelledError:
-            pass
-    
-    def update_loop_state(self):
-        if self.isPlaying:
-            if not self._increment_loop.is_running():
-                self._increment_loop.start()
-        else:
-            if self._increment_loop.is_running():
-                self._increment_loop.stop()
 
     def to_dict(self):
          return {
@@ -297,8 +293,6 @@ class Player(commands.Cog):
 
                 self.play_music(guildId, next_index, uuid)
         
-        mediaBot.after_play_ref = after_play
-
         try:
             if mediaBot.playlistMessage:
                 self.bot.loop.create_task(
@@ -314,7 +308,7 @@ class Player(commands.Cog):
 
             voice.play(discord.FFmpegOpusAudio(executable=f"{GLOBAL_CONFIGS.ffmpeg}",
                                                 source=f"{mediaBot.mediaplayer_path}/{mediaBot.musics[mediaBot.current.music.index].filename}", bitrate=320),
-                        after=mediaBot.after_play_ref)
+                        after=after_play)
             
         except Exception as e:
             print(e)
@@ -555,7 +549,7 @@ class Player(commands.Cog):
             await msg.edit(embed=em)
 
 
-    @commands.command()
+    @commands.command(aliases=['ersl'])
     async def lp_searchlist(self, context: commands.Context, *, searchTerm=""):
 
         mediaBot = self.mediaBots.get(context.guild.id)

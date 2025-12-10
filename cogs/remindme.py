@@ -50,52 +50,51 @@ class RemindMe(commands.Cog):
                 await context.send("Invalid time format. Use HH:MM or H:MM.")
                 return
 
-        if not valid_regex:
-            if time_format == TimeFormat.DATE_ONLY:
-                if len(args) == 0:
-                    await context.send("You must provide a time after the date. Example: `12-09 14:30` or `2025-12-09 14:30`")
-                    return
-                valid_regex = False  # not sure if the regex  yyyy-mm-dd hh:mm  format, and it's not in the past
-                time = time + " " + args[0]
+        if not valid_regex and time_format == TimeFormat.DATE_ONLY:
+            if len(args) == 0:
+                await context.send("You must provide a time after the date. Example: `12-09 14:30` or `2025-12-09 14:30`")
+                return
+            valid_regex = False  # not sure if the regex  yyyy-mm-dd hh:mm  format, and it's not in the past
+            time = time + " " + args[0]
 
-                _split_char_index = time.find(':')
+            _split_char_index = time.find(':')
 
-                if time[_split_char_index - 2] == " ":
-                    time = time[:_split_char_index - 1] + "0" + time[_split_char_index - 1:]
+            if time[_split_char_index - 2] == " ":
+                time = time[:_split_char_index - 1] + "0" + time[_split_char_index - 1:]
 
-                try:
-                    time_format = self.regexes(time)
-                    if time_format == TimeFormat.FULL_DATE or time_format == TimeFormat.DATE_NO_YEAR:
-                        message_to_send = ""
-                        if len(args) > 0:
-                            message_to_send = ' '.join(args[1:])
+            try:
+                time_format = self.regexes(time)
+                if time_format == TimeFormat.FULL_DATE or time_format == TimeFormat.DATE_NO_YEAR:
+                    message_to_send = ""
+                    if len(args) > 0:
+                        message_to_send = ' '.join(args[1:])
 
-                        if time_format == TimeFormat.FULL_DATE:
-                            __Year = int(time[0:4])
-                            __Month = int(time[5:7])
-                            __Day = int(time[8:10])
-                            __Hour = int(time[11:13])
-                            __Minute = int(time[14:16])
-                            set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-                        else:
-                            __Year = nowtime.year
-                            __Month = int(time[0:2])
-                            __Day = int(time[3:5])
-                            __Hour = int(time[6:8])
-                            __Minute = int(time[9:11])
-                            set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-                            if set_time < nowtime:
-                                set_time = datetime(__Year + 1, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
-
-                        if set_time > nowtime:
-                            valid_regex = True
-                        else:
-                            await context.send("I can't ping you in the past.")
+                    if time_format == TimeFormat.FULL_DATE:
+                        __Year = int(time[0:4])
+                        __Month = int(time[5:7])
+                        __Day = int(time[8:10])
+                        __Hour = int(time[11:13])
+                        __Minute = int(time[14:16])
+                        set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
                     else:
-                        await context.send("The format of the time is wrong!")
-                except Exception:
-                    print(sys.exc_info())
+                        __Year = nowtime.year
+                        __Month = int(time[0:2])
+                        __Day = int(time[3:5])
+                        __Hour = int(time[6:8])
+                        __Minute = int(time[9:11])
+                        set_time = datetime(__Year, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
+                        if set_time < nowtime:
+                            set_time = datetime(__Year + 1, __Month, __Day, __Hour, __Minute, 0, _Microsecond)
+
+                    if set_time > nowtime:
+                        valid_regex = True
+                    else:
+                        await context.send("I can't ping you in the past.")
+                else:
                     await context.send("The format of the time is wrong!")
+            except Exception:
+                print(sys.exc_info())
+                await context.send("The format of the time is wrong!")
 
             if not valid_regex:
                 hours, minutes = time.split(":", 1)
