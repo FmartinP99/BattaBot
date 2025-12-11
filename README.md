@@ -19,7 +19,7 @@ Recommended Python version: `3.9`.
 
 ## Features:
 
-- Reminder function. These reminders are stored inside the database.
+- Reminder function. These reminders are stored in the database.
 - Audio playing from the computer. (Currently MP3 only).
 - Optional real-time websocket communication. (More will be added in the future).
 - TraceMoe search.
