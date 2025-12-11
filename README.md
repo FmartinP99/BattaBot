@@ -19,13 +19,12 @@ Recommended Python version: `3.9`.
 
 ## Features:
 
-- TraceMoe search.
 - Reminder function. These reminders are stored inside the database.
 - Audio playing from the computer. (Currently MP3 only).
 - Optional real-time websocket communication. (More will be added in the future).
+- TraceMoe search.
+- MyAnimeList search feature
 
 ## Additional:
 
 - As of now, this program can work with `SQLITE` (default) and `SUPABASE` databases. You can easily add your own database to it if you prefer something else. All you have to do is create a class that inherits from `BaseDB` and implement it's abstract functions, modify the `_init_db_handler()` of the `BaseService` class, and add a new enum inside the `DatabaseType` (you have to use the same values inside the `config.json`'s `database_type` field).
-
-- ~~MyAnimeList search feature.~~ -> v4 migration needed.
