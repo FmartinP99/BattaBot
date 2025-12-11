@@ -48,7 +48,6 @@ class MalSearch(commands.Cog):
                 if not name.startswith("-manga"):
                     art = "anime"
                     results = await aio_jikan.search(search_type='anime', query=f'{searched_name}')
-                    results2 = await aio_jikan.anime(1535)
 
                 else:
                     art = "manga"
