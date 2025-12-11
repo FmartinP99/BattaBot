@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum, auto
 import re
 from typing import Optional
@@ -86,3 +86,11 @@ def _check_timeformat_regexes(time: str) -> TimeFormat:
             return TimeFormat.NUMBER
 
         return TimeFormat.INVALID
+
+
+def make_naive(dt: datetime) -> datetime:
+    if dt.tzinfo is not None and dt.utcoffset() is not None:
+        dt = dt.astimezone(timezone.utc)
+        return dt.replace(tzinfo=None)
+    else:
+        return dt

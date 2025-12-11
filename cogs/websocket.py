@@ -76,7 +76,7 @@ class Websocket(commands.Cog):
                 channel_id = int(message["channelId"])
                 response = await self.sendMessage(server_id, channel_id, message["text"]) 
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
         elif msgtype == WebsocketMessageType.SET_REMINDER:
@@ -90,7 +90,7 @@ class Websocket(commands.Cog):
                 date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
                 response = await self.handleSetReminder(server_id, channel_id, member_id, date, text)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
             
@@ -102,7 +102,7 @@ class Websocket(commands.Cog):
 
                 response = await self.voice_channel_update(server_id, channel_id, is_disconnect)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
             
@@ -111,7 +111,7 @@ class Websocket(commands.Cog):
                 server_id = int(message["serverId"])
                 response = await self.get_music_playlist(server_id)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
 
@@ -122,7 +122,7 @@ class Websocket(commands.Cog):
 
                 response = await self.skip_song_to(server_id, song_index)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
             
@@ -133,7 +133,7 @@ class Websocket(commands.Cog):
 
                 response = await self.play_pause(server_id, is_pausing)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None
 
@@ -142,7 +142,7 @@ class Websocket(commands.Cog):
                 server_id = int(message["serverId"])
                 response = self.get_voice_state(server_id)
             except Exception as e:
-                print("Error messageType was: " + msgtype)
+                print("Error message was: " + str(message))
                 print(e)
                 return None        
         return response
@@ -220,18 +220,16 @@ class Websocket(commands.Cog):
         if not channel:
             print(f"Channel {channelId} not found")
             return
+        
         remindme_cog = self.bot.get_cog("RemindMe");
-
-        nowtime = datetime.now(timezone.utc);
-        sleepTimer = (date - nowtime).total_seconds()
-
-        # converting to utc+1 
-        date = date + timedelta(hours=1);
-        if sleepTimer < 0:
+        if remindme_cog is None:
+            print("RemindMe cog was none in handleSetRemidner.")
             return
+        date = date.astimezone()  
+        date = date.replace(tzinfo=None)
+
+        await remindme_cog.add_remindme_from_outside(serverid, channelId, memberId, date, text)
         await channel.send(f"Timer set to: {date.strftime('%Y-%m-%d  %H:%M')} <@{memberId}> \n{text}")
-        await remindme_cog.remindme_writefile(channelId, memberId, date, text)
-        asyncio.create_task(self._sleep_and_ping(serverid, channelId, text, memberId, sleepTimer))
         
     async def _sleep_and_ping(self, serverId, channelId, text, memberId, sleepTimer):
         await asyncio.sleep(sleepTimer)

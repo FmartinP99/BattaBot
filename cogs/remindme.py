@@ -1,5 +1,5 @@
 from discord.ext import commands
-from datetime import datetime
+from datetime import datetime, timezone
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner
@@ -33,6 +33,24 @@ class RemindMe(commands.Cog):
             rowId, 
             message_to_send))
         self.scheduled_tasks[rowId] = task
+
+    async def add_remindme_from_outside(self, guild_id, channel_id, author_id, set_time, message_to_send):
+        nowtime = datetime.now()
+        sleep_timer = (set_time - nowtime).total_seconds()
+
+        if sleep_timer < 0:
+            return
+        
+        rowId = await self.add_remindme_to_database(guild_id, channel_id, author_id, set_time, message_to_send)
+        task = asyncio.create_task(self.auto_mention(
+            sleep_timer, 
+            guild_id, 
+            channel_id, 
+            author_id, 
+            rowId, 
+            message_to_send))
+        self.scheduled_tasks[rowId] = task
+        
 
     @commands.command(aliases=['getmyrms'])
     async def get_remindmes_for_user(self, context: commands.Context):

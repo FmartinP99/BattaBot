@@ -1,6 +1,7 @@
 from typing import List, Optional
 from Database.Classes.Remind import CreateRemind, RemindRow
 from Services.BaseService import BaseService
+from utils.remindme_helper import make_naive
 
 class RemindmeService(BaseService):
 
@@ -12,7 +13,7 @@ class RemindmeService(BaseService):
         server_id=server_id,
         channel_id=channel_id,
         user_id=user_id,
-        remind_time=remind_time,
+        remind_time=make_naive(remind_time),
         remind_text=remind_text,
         remind_happened=0  
     )
