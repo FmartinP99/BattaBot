@@ -1,3 +1,4 @@
+from enum import Enum
 from discord import Member
 from discord.ext import commands
 from datetime import datetime, timedelta, timezone
@@ -6,6 +7,20 @@ import asyncio
 from websocketManager import ws_manager, WebSocketMessage
 import json
 from discord.utils import get as get
+
+class WebsocketMessageType(Enum):
+    NULL = ""
+    INIT = "init"
+    SEND_MESSAGE = "sendMessage"
+    INCOMING_MESSAGE = "incomingMessage"
+    SET_REMINDER = "setReminder"
+    VOICE_STATE_UPDATE = "voiceStateUpdate"
+    GET_MUSIC_PLAYLIST = "getMusicPlaylist"
+    PLAYLIST_STATE_UPDATE = "playlistStateUpdate"
+    PLAYLIST_SONG_SKIP = "playlistSongSkip"
+    PLAYLIST_PAUSE = "playlistPause"
+    PLAYLIST_RESUME = "playlistResume"
+    PRESENCE_UPDATE = "presenceUpdate"
 
 class Websocket(commands.Cog):
 
@@ -25,16 +40,23 @@ class Websocket(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         pass
+
+    def parse_ws_message_type(self, value: str) -> WebsocketMessageType:
+        try:
+            return WebsocketMessageType(value)
+        except ValueError:
+            return WebsocketMessageType.NULL
     
     async def handleIncomingWsMessage(self, message):
         json_data = json.loads(message)
         print(json_data)
         if "type" not in json_data or "message" not in json_data:
-            print("ERROR!!!")
+            print("Incoming websocket message format error.")
+            print(json_data)
             return
 
-        msg_type = json_data["type"];
-        message = json_data["message"]
+        msg_type = self.parse_ws_message_type(json_data["type"])
+        message = json_data.get("message", "")
         
         response = WebSocketMessage(
             msgtype=msg_type,
@@ -46,9 +68,9 @@ class Websocket(commands.Cog):
     
     async def getIncomingWsMessage(self, msgtype, message = ""):
         response = ""
-        if msgtype == "init":
+        if msgtype == WebsocketMessageType.INIT:
             response = await self.getAllServerInformation()
-        elif msgtype == "sendMessage":
+        elif msgtype == WebsocketMessageType.SEND_MESSAGE:
             try:
                 server_id = int(message["serverId"])
                 channel_id = int(message["channelId"])
@@ -57,7 +79,7 @@ class Websocket(commands.Cog):
                 print("Error messageType was: " + msgtype)
                 print(e)
                 return None
-        elif msgtype == "setReminder":
+        elif msgtype == WebsocketMessageType.SET_REMINDER:
             try:
                 server_id = int(message["serverId"])
                 channel_id = int(message["channelId"])
@@ -66,15 +88,13 @@ class Websocket(commands.Cog):
 
                 date_str = message["date"]
                 date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-
-
                 response = await self.handleSetReminder(server_id, channel_id, member_id, date, text)
             except Exception as e:
                 print("Error messageType was: " + msgtype)
                 print(e)
                 return None
             
-        elif msgtype == "voiceStateUpdate":
+        elif msgtype == WebsocketMessageType.VOICE_STATE_UPDATE:
             try:
                 server_id = int(message["serverId"])
                 channel_id = int(message["channelId"])
@@ -86,7 +106,7 @@ class Websocket(commands.Cog):
                 print(e)
                 return None
             
-        elif msgtype == "getMusicPlaylist":
+        elif msgtype == WebsocketMessageType.GET_MUSIC_PLAYLIST:
             try:
                 server_id = int(message["serverId"])
                 response = await self.get_music_playlist(server_id)
@@ -106,7 +126,7 @@ class Websocket(commands.Cog):
                 print(e)
                 return None
             
-        elif msgtype == "playlistPause" or msgtype == "playlistResume":
+        elif msgtype == WebsocketMessageType.PLAYLIST_PAUSE or msgtype == WebsocketMessageType.PLAYLIST_RESUME:
             try:
                 is_pausing = msgtype == "playlistPause"
                 server_id = int(message["serverId"])
@@ -117,7 +137,7 @@ class Websocket(commands.Cog):
                 print(e)
                 return None
 
-        elif msgtype == "playlistStateUpdate":
+        elif msgtype == WebsocketMessageType.PLAYLIST_STATE_UPDATE:
             try:
                 server_id = int(message["serverId"])
                 response = self.get_voice_state(server_id)
@@ -126,8 +146,6 @@ class Websocket(commands.Cog):
                 print(e)
                 return None        
         return response
-    
-   
 
     async def getAllServerInformation(self):
         await self.bot.wait_until_ready()
@@ -193,7 +211,6 @@ class Websocket(commands.Cog):
         return None
     
     async def handleSetReminder(self, serverid, channelId, memberId, date, text):
-        print(date)
         guild = self.bot.get_guild(serverid)
         if not guild:
             print(f"Guild {serverid} not found")
