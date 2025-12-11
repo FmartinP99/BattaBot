@@ -128,7 +128,7 @@ class Websocket(commands.Cog):
             
         elif msgtype == WebsocketMessageType.PLAYLIST_PAUSE or msgtype == WebsocketMessageType.PLAYLIST_RESUME:
             try:
-                is_pausing = msgtype == "playlistPause"
+                is_pausing = msgtype == WebsocketMessageType.PLAYLIST_PAUSE
                 server_id = int(message["serverId"])
 
                 response = await self.play_pause(server_id, is_pausing)
