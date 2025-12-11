@@ -42,7 +42,6 @@ class MalSearch(commands.Cog):
         for i in name_splitted:
             searched_name = searched_name + i + " "
         searched_name = searched_name.strip()
-        print(searched_name)
 
         if searched_name != "":
             async with AioJikan() as aio_jikan:
@@ -54,8 +53,6 @@ class MalSearch(commands.Cog):
                 else:
                     art = "manga"
                     results = await aio_jikan.search(search_type='manga', query=f'{searched_name}')
-                print(results)
-                print(results2)
                 if results["data"]:
                     result = results["data"][0]
 

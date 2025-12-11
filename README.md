@@ -1,28 +1,31 @@
-# バッタBot
-Discordbot written in Python with (optional) MongoDB.\
-\
-Recommended Python version: 3.9 
-\
-\
-Install:
-- Create a virtual enviroment (PyCharm does this by default)
-- Clone the repo.
-- Add your .token0 file in the root folder.
-- Run the command inside the root folder: pip install -r requirements.txt.
-- Set the variables in the Files/globalsDefaultValueImport.txt and Files/globalsForTheDatabase.txt (if you want MongoDB).
-- If you want to use the player function you must have FFMPEG installed somewhere in your system, provide it's bin/ffmpeg.exe 's path.
+# バッタ Bot
+
+## About:
+
+Discordbot written in Python. Also features optional websocket communication. For example with: [Battabot-WebUI](https://github.com/FmartinP99/Battabot-WebUI)
+
+Recommended Python version: `3.9`.
+
+## Install:
+
+- Clone the repository.
+- Create a virtual enviroment with the correct python version.
+- Activate the environment.
+- run `pip install -r requirements.txt`.
+- Create a `.token0` file inside the root folder, that contains your bot's api key.
+- Set the variables inside the `files/config.json`
+- If you want to use the player function you must have FFMPEG installed somewhere in your system, provide it's bin/ffmpeg.exe 's path in the `config.json`.
 - Run the battaStart.py file.
-- If Jinja2 error happens try: <br> 
->- pip install Jinja2==2.11.3 Markupsafe==1.1.1
->- python.exe -m pip install "pymongo[srv]"
 
-Features:
-- MyAnimeList search.
+## Features:
+
 - TraceMoe search.
-- Reminder function.
+- Reminder function. These reminders are stored inside the database.
+- Audio playing from the computer. (Currently MP3 only).
+- Optional real-time websocket communication. (More will be added in the future).
 
-- Mediaplayer (local and youtube, FFMPEG required)
- 
-- Leveling and Xp system (MongoDB required)
-- Message count and groupping by date (MongoDB required)
-- Groups feature (MongoDB required)
+## Additional:
+
+- As of now, this program can work with `SQLITE` (default) and `SUPABASE` databases. You can easily add your own database to it if you prefer something else. All you have to do is create a class that inherits from `BaseDB` and implement it's abstract functions, modify the `_init_db_handler()` of the `BaseService` class, and add a new enum inside the `DatabaseType` (you have to use the same values inside the `config.json`'s `database_type` field).
+
+- ~~MyAnimeList search feature.~~ -> v4 migration needed.
