@@ -115,7 +115,7 @@ class Websocket(commands.Cog):
                 print(e)
                 return None
 
-        elif msgtype == "playlistSongSkip":
+        elif msgtype == WebsocketMessageType.PLAYLIST_SONG_SKIP:
             try:
                 server_id = int(message["serverId"])
                 song_index = int(message["songIndex"])
