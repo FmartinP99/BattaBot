@@ -469,7 +469,7 @@ class Player(commands.Cog):
                                        description=song_name,
                                        color=0x71368a)
                     em.set_thumbnail(url="attachment://cover.jpg")
-                    em.set_footer(text=f"Made by:\nTReKeSS")
+                    
 
                     mediaBot.playlistMessage = await context.send(file=file, embed=em)
                     await mediaBot.playlistMessage.add_reaction('\U00002B05')
@@ -543,7 +543,7 @@ class Player(commands.Cog):
                            description=songTitle,
                            color=0x71368a)
         em.set_thumbnail(url="attachment://cover.jpg")
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         msg = await channel.fetch_message(messageId)
         if msg:
             await msg.edit(embed=em)
@@ -597,7 +597,7 @@ class Player(commands.Cog):
                             description=f"Searched title: {searchedTitle}\nMatches: {index}-{index + (max_page_entry - 1) if index + (max_page_entry - 1) < len(searched_musics) else len(searched_musics)} out of {len(searched_musics)}",
                             color=0x71368a)
                         em.set_thumbnail(url="attachment://cover.jpg")
-                        em.set_footer(text=f"Made by:\nTReKeSS")
+                        
 
                         for result in searched_musics[index - 1:]:
 

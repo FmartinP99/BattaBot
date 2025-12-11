@@ -71,7 +71,7 @@ class MalSearch(commands.Cog):
                         em.add_field(name='Members', value=f"{result['members']}")
                     em.add_field(name='Rating', value=result['score'])
                     em.set_thumbnail(url=result['images']['jpg']['image_url'])
-                    em.set_footer(text=f"Made by:\nTReKeSS")
+                    
                     await context.send(embed=em)
                 else:
                     await context.send("Could not find anything!!")
@@ -136,7 +136,7 @@ class MalSearch(commands.Cog):
                     for i in range(0, len(malSearchAttributes.titles)):
                         em.add_field(name=f"{i}", value=f"{malSearchAttributes.titles[i]}")
                     em.set_thumbnail(url=context.guild.me.avatar)
-                    em.set_footer(text=f"Made by:\nTReKeSS")
+                    
                     malSearchAttributes.traceMoeMessage = await context.send(embed=em)
                     malSearchAttributes.context = context
 

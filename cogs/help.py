@@ -27,7 +27,7 @@ class HelpCommandAttributes():
         em.add_field(name='4 - Player',
                      value='playmusic\n lp_searchlist \n now_playing \n skip, prev, stop, resume \n setpath, shuffle')
         em.add_field(name='Others', value='ping, status')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
 
         self.embedList.append(em)
 
@@ -35,7 +35,7 @@ class HelpCommandAttributes():
         em.add_field(name="Commands:", value=f'{prefix}load <module_name>\n'
                                              f'{prefix}unload <module_name>\n'
                                              f'{prefix}reload <module_name>\n')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
 
         self.embedList.append(em)
 
@@ -46,7 +46,7 @@ class HelpCommandAttributes():
                                              f'{prefix}mal -manga <manga_name>\n'
                                              f'{prefix}tracemoe <attached_picture or picture_url>\n'
                                              f'{prefix}setsimilarity <value between 0 and 1, default is 0.8>')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
 
         self.embedList.append(em)
 
@@ -61,7 +61,7 @@ class HelpCommandAttributes():
                            f'\n{prefix}getmyrms'
                            f'\n{prefix}clearmyrms'
                            )
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
 
         self.embedList.append(em)
 
@@ -72,7 +72,7 @@ class HelpCommandAttributes():
         em.add_field(name="Commands:",
                      value=f'{prefix}localplayer\n{prefix}lp_searchlist <song_name> - lists songs with the <song_name>\n'
                            f'{prefix}now_playing\n{prefix}skip <song_index or nothing>\n{prefix}next\n {prefix}prev\n {prefix}shuffle')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
 
         self.embedList.append(em)
 
@@ -174,7 +174,7 @@ class HelpCommands(commands.Cog):
         em = discord.Embed(title='Load', description="Loads a module and it's commands.", color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}load <modulename>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -183,7 +183,7 @@ class HelpCommands(commands.Cog):
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}unload <modulename>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -192,7 +192,7 @@ class HelpCommands(commands.Cog):
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}reload <modulename>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -202,7 +202,7 @@ class HelpCommands(commands.Cog):
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}mal <anime name>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -212,7 +212,7 @@ class HelpCommands(commands.Cog):
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}tracemoe <attached_picture or picture_url>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -222,7 +222,7 @@ class HelpCommands(commands.Cog):
                            color=0x71368a)
         em.add_field(name="Syntax", value=f'{prefix}setsimilarity <value between 0 and 1, default is 0.8>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -233,7 +233,7 @@ class HelpCommands(commands.Cog):
         em.add_field(name="Syntax",
                      value=f'{prefix}deleterm <remindme_id>')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -244,7 +244,7 @@ class HelpCommands(commands.Cog):
         em.add_field(name="Syntax",
                      value=f'{prefix}clearmyrms')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -256,7 +256,7 @@ class HelpCommands(commands.Cog):
         em.add_field(name="Syntax",
                      value=f'{prefix}clearmyrms')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -268,7 +268,7 @@ class HelpCommands(commands.Cog):
         em.set_thumbnail(url="attachment://cover.jpg")
         em.add_field(name="Syntax",
                      value=f'{prefix}play <video_name_or_link_URL>')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -280,7 +280,7 @@ class HelpCommands(commands.Cog):
         em.add_field(name="Alisases",
                      value=f'{prefix}er')
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
@@ -295,7 +295,7 @@ class HelpCommands(commands.Cog):
                      value=f'{prefix}er_searchlist')
         em.add_field(name="Alisases",
                      value=f'{prefix}ersl')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -309,7 +309,7 @@ class HelpCommands(commands.Cog):
                      value=f'{prefix}now_playing')
         em.add_field(name="Alisases",
                      value=f'{prefix}np')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file= file,embed=em)
 
     @help.command()
@@ -321,7 +321,7 @@ class HelpCommands(commands.Cog):
         em.set_thumbnail(url="attachment://cover.jpg")
         em.add_field(name="Syntax",
                      value=f'{prefix}setpath <path>')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -335,7 +335,7 @@ class HelpCommands(commands.Cog):
                      value=f'{prefix}skip\n{prefix}skip <number>')
         em.add_field(name="Tip",
                      value=f"To know a song's index, use {prefix}ersl <song_name>")
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -347,7 +347,7 @@ class HelpCommands(commands.Cog):
         em.set_thumbnail(url="attachment://cover.jpg")
         em.add_field(name="Syntax",
                      value=f'{prefix}prev')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -359,7 +359,7 @@ class HelpCommands(commands.Cog):
         em.set_thumbnail(url="attachment://cover.jpg")
         em.add_field(name="Syntax",
                      value=f'{prefix}stop')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
@@ -371,21 +371,21 @@ class HelpCommands(commands.Cog):
         em.set_thumbnail(url="attachment://cover.jpg")
         em.add_field(name="Syntax",
                      value=f'{prefix}shuffle')
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(file=file, embed=em)
 
     @help.command()
     async def ping(self, context):
         em = discord.Embed(title='Ping', description='Pings the bot!', color=0x71368a)
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @help.command()
     async def status(self, context):
         em = discord.Embed(title='Status', description='Changes the status of the bot. Only the owner can do it!', color=0x71368a)
         em.set_thumbnail(url=context.guild.me.avatar)
-        em.set_footer(text=f"Made by:\nTReKeSS")
+        
         await context.send(embed=em)
 
     @commands.Cog.listener("on_guild_join")
