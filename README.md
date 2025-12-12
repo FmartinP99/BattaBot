@@ -27,4 +27,4 @@ Recommended Python version: `3.9`.
 
 ## Additional:
 
-- As of now, this program can work with `SQLITE` (default) and `SUPABASE` databases. You can easily add your own database to it if you prefer something else. All you have to do is create a class that inherits from `BaseDB` and implement it's abstract functions, modify the `_init_db_handler()` of the `BaseService` class, and add a new enum inside the `DatabaseType` (you have to use the same values inside the `config.json`'s `database_type` field).
+- As of now, this program can work with `SQLITE` (default) and `SUPABASE` databases. You can easily add your own database to it if you prefer something else. All you have to do is create a class that inherits from `BaseDB` and implement it's abstract functions, add a new enum inside the `DatabaseType` (you have to use the same values inside the `config.json`'s `database_type` field), modify the `_init_db_handler()` of the `BaseService` class, and modify the `create_database_handler()` inside `battaStart.py`.
