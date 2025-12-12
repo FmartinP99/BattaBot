@@ -18,27 +18,33 @@ def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optiona
 
     if regex_res_mode == TimeFormat.INVALID:
         return (None, "Invalid Time Format.")
+    
+    # padding it
+    padded_args = args
+    if len(args) == 1:
+        padded_args = (padded_args[0], "")
 
     #1 - ('some number', '+', 'msg1', 'msg2' etc)
-    if(regex_res_mode == TimeFormat.NUMBER and args[1] != "+" or regex_res_mode != TimeFormat.NUMBER and args[1] == "+"):
+    if(regex_res_mode == TimeFormat.NUMBER and padded_args[1] != "+" or regex_res_mode != TimeFormat.NUMBER and padded_args[1] == "+"):
          return (None, "Invalid time format. Try  `+ <number>.`")
     
-    if(regex_res_mode == TimeFormat.NUMBER and args[1] == "+"):
-        message_to_send = ' '.join(args[1:])
+    if(regex_res_mode == TimeFormat.NUMBER and padded_args[1] == "+"):
+        message_to_send = ' '.join(padded_args[1:])
         message_to_send = message_to_send[2:]  # cuts the "+"
         minutes = int(mode)
         return (nowtime + timedelta(minutes=minutes), message_to_send)
     
     #2 - ('20:30', 'msg1', 'msg2' etc)
     if(regex_res_mode == TimeFormat.TIME_ONLY):
-        message_to_send = ' '.join(args[1:])
+        print(padded_args)
+        message_to_send = ' '.join(padded_args[1:])
         hour, minute = map(int, mode.split(":"))
         target_time = nowtime.replace(hour=hour, minute=minute, second=0, microsecond=0)
         if target_time <= nowtime:
             target_time = target_time + timedelta(days=1)
         return (target_time, message_to_send)
     
-    time_element = args[1]
+    time_element = padded_args[1]
     regex_res_time = _check_timeformat_regexes(time_element)
 
     #3 - ('1999-01-01', '20:30', 'msg1', 'msg2' etc)
@@ -46,7 +52,7 @@ def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optiona
         return None, "Invalid time format. Try  `YYYY-MM-DD HH:mm or MM-DD HH:mm`"
     
     if(regex_res_mode == TimeFormat.DATE_ONLY and regex_res_time == TimeFormat.TIME_ONLY):
-        message_to_send = ' '.join(args[2:])
+        message_to_send = ' '.join(padded_args[2:])
         date_time = mode + " " + time_element
         hour, minute = map(int, time_element.split(":"))
         #either FULL_DATE_TIME or DATE_TIME_NO_YEAR
