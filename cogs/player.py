@@ -14,7 +14,7 @@ import discord
 from discord.utils import get as get
 import uuid
 import time
-from websocketManager import ws_manager, WebSocketMessage
+from Websocket.websocketManager import ws_manager, WebSocketMessage
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 

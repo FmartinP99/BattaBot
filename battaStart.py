@@ -4,8 +4,10 @@ from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
 from global_config import GLOBAL_CONFIGS, DatabaseType
 import asyncio
-from websocketManager import ws_manager
+from Websocket.websocketManager import ws_manager
+from Websocket.websocketMessageDistributor import WebsocketMessageDistributor
 
+ws_message_distributor = WebsocketMessageDistributor(bot)
 if GLOBAL_CONFIGS.websocket_enabled:
     from fastapi import FastAPI, WebSocket
     import uvicorn
@@ -18,11 +20,7 @@ if GLOBAL_CONFIGS.websocket_enabled:
         try:
             while True:
                 data = await ws.receive_text()
-                cog = bot.get_cog("Websocket");
-                if cog:
-                    await cog.handleIncomingWsMessage(data)
-                else:
-                    raise ValueError("Websocket cog is not found!")
+                await ws_message_distributor.handle_incoming_ws_message(data)
         finally:
             ws_manager.disconnect(ws)
 
