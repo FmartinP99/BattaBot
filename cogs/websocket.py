@@ -86,8 +86,6 @@ class Websocket(commands.Cog):
        
             roles = sorted(guild.roles, key=lambda r: r.position, reverse=True)
             for role in roles:
-                print(role.id)
-                print(f"#{role.color.value:06x}")
                 guild_info["roles"].append({
                     "id": str(role.id),
                     "name": role.name,

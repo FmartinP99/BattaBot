@@ -62,7 +62,7 @@ class WebsocketMessageDistributor:
         if response.message is not None:
             await ws_manager.broadcast(response)
     
-    async def distribute_incoming_ws_message(self, msgtype, message = ""):
+    async def distribute_incoming_ws_message(self, msgtype: WebsocketMessageType, message: str = ""):
 
         websocket_cog = self.bot.get_cog("Websocket");
         if not websocket_cog:
