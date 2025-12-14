@@ -1,3 +1,4 @@
+from typing import List
 from discord import Member
 from discord.ext import commands
 from datetime import datetime, timezone
@@ -37,7 +38,8 @@ class Websocket(commands.Cog):
                 "guildName": guild.name,
                 "iconUrl": guild.icon.url if guild.icon else None,
                 "channels": [],
-                "members": []
+                "members": [],
+                "roles": []
             }
 
             for channel in guild.channels:
@@ -59,13 +61,39 @@ class Websocket(commands.Cog):
 
             
             for member in guild.members:
+                roles = sorted(member.roles, key=lambda r: r.position, reverse=True)
+                roleIds: List[int] = [str(r.id) for r in roles]
+
                 guild_info["members"].append({
                     "memberId": str(member.id),
                     "name": member.name,
                     "displayName": member.display_name,
                     "avatarUrl" : member.avatar.url if member.avatar else member.default_avatar.url,
                     "bot": member.bot,
-                    "status": str(member.status)
+                    "status": str(member.status),
+                    "roleIds": roleIds
+                })
+
+            role_priorities = {
+                str(role.id): role.position
+                for role in guild.roles
+            }
+
+            guild_info["members"].sort(
+                key=lambda m: role_priorities.get(m["roleIds"][0], -1) if m["roleIds"] else -1, 
+                reverse=True
+                )
+       
+            roles = sorted(guild.roles, key=lambda r: r.position, reverse=True)
+            for role in roles:
+                print(role.id)
+                print(f"#{role.color.value:06x}")
+                guild_info["roles"].append({
+                    "id": str(role.id),
+                    "name": role.name,
+                    "priority": role.position,
+                    "color": F"#{role.color.value:06x}",
+                    "displaySeparately": role.hoist,
                 })
 
             all_data.append(guild_info)
