@@ -1,5 +1,5 @@
 from typing import List
-from discord import Member
+from discord import Member, Role
 from discord.ext import commands
 from datetime import datetime, timezone
 import botMain
@@ -287,7 +287,31 @@ class Websocket(commands.Cog):
                 "serverId": str(serverId),
                 "playlistState": current_state.to_dict()
             }
-    
+
+    @commands.has_permissions(manage_roles=True)
+    async def toggle_role(self, server_id: int, member_id: int, role_id: int):
+        guild = self.bot.get_guild(server_id)
+        if guild is None:
+            print(f"Guild with ID {server_id} not found.")
+            return
+
+        member = guild.get_member(member_id)
+        if member is None:
+            member = await guild.fetch_member(member_id)
+        if member is None:
+            print(f"Member with the id {member_id} was not found in guild {guild.name}")
+            return
+        
+        role = guild.get_role(role_id)
+        if role is None:
+            print(f"Role with the id {role_id} was not found in guild {guild.name}")
+            return
+        
+        if role in member.roles:
+            await member.remove_roles(role)
+        else:
+            await member.add_roles(role)
+        
     @commands.Cog.listener()
     async def on_presence_update(self, before: Member, after: Member):
         if(before.status != after.status):
@@ -296,10 +320,19 @@ class Websocket(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before: Member, after: Member):
+
+        # if roles change
+        old_roles = set(before.roles)
+        new_roles = set(after.roles)
+        if old_roles != new_roles:
+            await self._handle_roles_update(after.guild.id, after.id, old_roles, new_roles)
+            return
+
+        # else
         await self._handle_member_change(before, after) 
     
     async def _handle_member_change(self, before: Member, after: Member):
-        
+
         payload = WebSocketMessage(
         msgtype="presenceUpdate",
         message={
@@ -310,6 +343,33 @@ class Websocket(commands.Cog):
             }
         )
 
+        await ws_manager.broadcast(payload)
+
+    async def _handle_roles_update(self, server_id: int, member_id: int, old_roles: set, new_roles: set):
+           
+        added_roles = new_roles - old_roles
+        removed_roles = old_roles - new_roles
+        role_is_added = False
+
+        if added_roles:
+            changed_role = added_roles.pop()
+            role_is_added = True
+        elif removed_roles:
+            changed_role = removed_roles.pop()
+            role_is_added = False
+        else:
+             return
+
+        payload = WebSocketMessage(
+        msgtype="toggleRole",
+        message={
+            "serverId": str(server_id),
+            "roleId": str(changed_role.id),
+            "memberId": str(member_id),
+            "roleIsAdded": role_is_added
+            }
+        )
+           
         await ws_manager.broadcast(payload)
         
 

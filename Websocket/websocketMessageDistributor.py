@@ -16,6 +16,7 @@ class WebsocketMessageType(Enum):
     PLAYLIST_PAUSE = "playlistPause"
     PLAYLIST_RESUME = "playlistResume"
     PRESENCE_UPDATE = "presenceUpdate"
+    TOGGLE_ROLE = "toggleRole"
 
 class WebsocketMessageDistributor:
     _instance = None
@@ -145,5 +146,15 @@ class WebsocketMessageDistributor:
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
-                return None        
+                return None    
+        elif msgtype == WebsocketMessageType.TOGGLE_ROLE:
+              try:
+                  server_id = int(message["serverId"])
+                  member_id = int(message["memberId"])
+                  role_id = int(message["roleId"])
+                  response = await websocket_cog.toggle_role(server_id, member_id, role_id)
+              except Exception as e:
+                print("Error message was: " + str(message))
+                print(e)
+                return None    
         return response
