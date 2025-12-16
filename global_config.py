@@ -5,7 +5,7 @@ import os
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(BASE_DIR, "files", "config.json")
+CONFIG_PATH = os.path.join(BASE_DIR, "Files", "config.json")
 
 class DatabaseType(Enum):
     SQLITE = "SQLITE"
