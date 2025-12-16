@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
 import json
+import os
+
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "files", "config.json")
 
 class DatabaseType(Enum):
     SQLITE = "SQLITE"
@@ -37,4 +42,4 @@ def load_config(path) -> Config:
 
     return Config(**data)
 
-GLOBAL_CONFIGS = load_config(path="files/config.json")
+GLOBAL_CONFIGS = load_config(path=CONFIG_PATH)

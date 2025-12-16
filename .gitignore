@@ -19,4 +19,4 @@ ffmpeg
 .venv/
 proba.py
 cogs/database2.py
-Files/config.json
+
