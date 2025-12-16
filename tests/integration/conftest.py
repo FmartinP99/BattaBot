@@ -12,10 +12,9 @@ import pytest
 from Database.SQLite3Db import SQLite3Db
 from Services.RemindmeService import RemindmeService
 
-TEST_DB_PATH = "Database/files/databaseTest.db"
-CREATE_TABLE_SQL = "Database/files/CreateReminderTable.sql"
-
-
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEST_DB_PATH = os.path.join(BASE_DIR, "../.." ,"Database", "files", "databaseTest.db")
+CREATE_TABLE_SQL = os.path.join(BASE_DIR, "../.." ,"Database", "files", "CreateReminderTable.sql")
 
 @pytest.fixture(scope="session")
 async def event_loop():
