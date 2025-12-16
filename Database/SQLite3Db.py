@@ -186,5 +186,12 @@ class SQLite3Db(BaseDb):
             conn.commit()
 
             return cursor.rowcount
+    
+    async def execute(self, sql: str, params: tuple = ()):
+        with self._lock:
+            conn = await self.connect()
+            cursor = conn.cursor()
+            cursor.execute(sql, params)
+            self._connection.commit()
 
        
