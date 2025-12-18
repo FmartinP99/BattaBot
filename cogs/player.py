@@ -363,6 +363,12 @@ class Player(commands.Cog):
         if voice is None:
             print("PlayPause voice is None ")
             return
+
+        # voice is connected but there are no now_playing, then we try to start one
+        if not isPausing and voice and voice.is_connected() and mediaBot.now_playing_guid is None:
+            new_guid = uuid.uuid4()
+            mediaBot.now_playing_guid = new_guid
+            self.skip_to(guildId, mediaBot.current.music.index)
         
         if not voice.is_connected():
             print("PlayPause voice is not connected.")
