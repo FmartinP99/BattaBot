@@ -101,31 +101,31 @@ class Websocket(commands.Cog):
            
         return all_data
     
-    async def sendMessage(self, serverId, channelId, text):
+    async def sendMessage(self, server_id, channel_id, text):
         
-        guild = self.bot.get_guild(serverId)
+        guild = self.bot.get_guild(server_id)
         if not guild:
-            print(f"Guild {serverId} not found")
+            print(f"Guild {server_id} not found")
             return
 
-        channel = guild.get_channel(channelId) 
+        channel = guild.get_channel(channel_id) 
         if not channel:
-            print(f"Channel {channelId} not found")
+            print(f"Channel {channel_id} not found")
             return
 
         await channel.send(text)
 
         return None
     
-    async def handle_set_reminder(self, serverid, channelId, memberId, date, text):
-        guild = self.bot.get_guild(serverid)
+    async def handle_set_reminder(self, server_id, channel_id, member_id, date, text):
+        guild = self.bot.get_guild(server_id)
         if not guild:
-            print(f"Guild {serverid} not found")
+            print(f"Guild {server_id} not found")
             return
 
-        channel = guild.get_channel(channelId) 
+        channel = guild.get_channel(channel_id) 
         if not channel:
-            print(f"Channel {channelId} not found")
+            print(f"Channel {channel_id} not found")
             return
         
         remindme_cog = self.bot.get_cog("RemindMe");
@@ -135,24 +135,24 @@ class Websocket(commands.Cog):
         date = date.astimezone()  
         date = date.replace(tzinfo=None)
 
-        await remindme_cog.add_remindme_from_outside(serverid, channelId, memberId, date, text)
-        await channel.send(f"Timer set to: {date.strftime('%Y-%m-%d  %H:%M')} <@{memberId}> \n{text}")
+        await remindme_cog.add_remindme_from_outside(server_id, channel_id, member_id, date, text)
+        await channel.send(f"Timer set to: {date.strftime('%Y-%m-%d  %H:%M')} <@{member_id}> \n{text}")
         
-    async def _sleep_and_ping(self, serverId, channelId, text, memberId, sleepTimer):
-        await asyncio.sleep(sleepTimer)
+    async def _sleep_and_ping(self, server_id, channel_id, text, member_id, sleep_timer):
+        await asyncio.sleep(sleep_timer)
         remindme_cog = self.bot.get_cog("RemindMe")
-        await remindme_cog.ping_bot(serverId, channelId, text, memberId)
+        await remindme_cog.ping_bot(server_id, channel_id, text, member_id)
 
-    async def voice_channel_update(self, serverId, channelId, is_disconnect):
+    async def voice_channel_update(self, server_id, channel_id, is_disconnect):
 
-        guild = self.bot.get_guild(serverId)
+        guild = self.bot.get_guild(server_id)
         if guild is None:
-            print(f"Guild with ID {serverId} not found.")
+            print(f"Guild with ID {server_id} not found.")
             return
 
-        channel = guild.get_channel(channelId)
+        channel = guild.get_channel(channel_id)
         if channel is None:
-            print(f"Channel with ID {channelId} not found in guild {serverId}.")
+            print(f"Channel with ID {channel_id} not found in guild {server_id}.")
             return
 
         voice = get(self.bot.voice_clients, guild=guild)
@@ -163,27 +163,27 @@ class Websocket(commands.Cog):
 
         try:
             if is_disconnect:
-                await player_cog._stop(serverId)
+                await player_cog._stop(server_id)
                 print(f"Disconnected from {channel.name}")
             else:
-                await player_cog.join(channelId, serverId)
+                await player_cog.join(channel_id, server_id)
         except Exception as e:
             print("Error while connecting/moving voice channel:")
             print(e)
 
     
-    async def get_music_playlist(self, serverId):
-        guild = self.bot.get_guild(serverId)
+    async def get_music_playlist(self, server_id):
+        guild = self.bot.get_guild(server_id)
         if guild is None:
-            print(f"Guild with ID {serverId} not found.")
+            print(f"Guild with ID {server_id} not found.")
             return
 
         player_cog = self.bot.get_cog("Player")
         if player_cog is None:
             return
 
-        song_dict = player_cog.get_song_dict(serverId)
-        current_state = player_cog.get_current_state(serverId)
+        song_dict = player_cog.get_song_dict(server_id)
+        current_state = player_cog.get_current_state(server_id)
 
         # filename might not be needed in the frontend
         if song_dict is not None:
@@ -202,27 +202,27 @@ class Websocket(commands.Cog):
             ws_songs = None
 
         return {
-            "serverId": str(serverId),
+            "serverId": str(server_id),
             "songs": ws_songs,
             "playlistState": current_state.to_dict() if current_state else None
         }
     
-    async def skip_song_to(self, serverId: int, songIndex: int):
-        guild = self.bot.get_guild(serverId)
+    async def skip_song_to(self, server_id: int, song_index: int):
+        guild = self.bot.get_guild(server_id)
         if guild is None:
-            print(f"Guild with ID {serverId} not found.")
+            print(f"Guild with ID {server_id} not found.")
             return
 
         player_cog = self.bot.get_cog("Player")
         if player_cog is None:
             return
         
-        player_cog.skip_to(serverId, songIndex)
+        player_cog.skip_to(server_id, song_index)
 
-    async def play_pause(self, serverId: int, isPausing: bool):
-        guild = self.bot.get_guild(serverId)
+    async def play_pause(self, server_id: int, is_pausing: bool):
+        guild = self.bot.get_guild(server_id)
         if guild is None:
-            print(f"Guild with ID {serverId} not found.")
+            print(f"Guild with ID {server_id} not found.")
             return
 
         player_cog = self.bot.get_cog("Player")
@@ -230,7 +230,7 @@ class Websocket(commands.Cog):
             print(f"PlayPause player cog was none.")
             return
         
-        player_cog.play_pause(serverId, isPausing)
+        player_cog.play_pause(server_id, is_pausing)
 
         
     @commands.Cog.listener("on_message")
@@ -275,19 +275,19 @@ class Websocket(commands.Cog):
 
         await ws_manager.broadcast(payload)
 
-    def get_voice_state(self, serverId: int):
-        guild = self.bot.get_guild(serverId)
+    def get_voice_state(self, server_id: int):
+        guild = self.bot.get_guild(server_id)
         if guild is None:
-            print(f"Guild with ID {serverId} not found.")
+            print(f"Guild with ID {server_id} not found.")
             return
 
         player_cog = self.bot.get_cog("Player")
         if player_cog is None:
             return
 
-        current_state = player_cog.get_current_state(serverId)
+        current_state = player_cog.get_current_state(server_id)
         return  {
-                "serverId": str(serverId),
+                "serverId": str(server_id),
                 "playlistState": current_state.to_dict()
             }
 
@@ -334,7 +334,7 @@ class Websocket(commands.Cog):
         await self._handle_presence_change(before, after) 
     
     async def _handle_presence_change(self, before: Member, after: Member):
-        newActivity = self.get_highest_priority_activity(after)
+        new_activity = self.get_highest_priority_activity(after)
         payload = WebSocketMessage(
         msgtype="presenceUpdate",
         message={
@@ -342,7 +342,7 @@ class Websocket(commands.Cog):
             "serverId": str(before.guild.id),
             "newStatus": str(after.status),
             "newDisplayName": str(after.display_name),
-            "newActivityName": newActivity.name if newActivity else None
+            "newActivityName": new_activity.name if new_activity else None
             }
         )
 
