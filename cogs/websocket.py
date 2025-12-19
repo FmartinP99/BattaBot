@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 from discord import Member, Role
+import discord
 from discord.ext import commands
 from datetime import datetime, timezone
 import botMain
@@ -63,6 +64,7 @@ class Websocket(commands.Cog):
             for member in guild.members:
                 roles = sorted(member.roles, key=lambda r: r.position, reverse=True)
                 roleIds: List[int] = [str(r.id) for r in roles]
+                activity = self.get_highest_priority_activity(member)
 
                 guild_info["members"].append({
                     "memberId": str(member.id),
@@ -71,7 +73,8 @@ class Websocket(commands.Cog):
                     "avatarUrl" : member.avatar.url if member.avatar else member.default_avatar.url,
                     "bot": member.bot,
                     "status": str(member.status),
-                    "roleIds": roleIds
+                    "roleIds": roleIds,
+                    "activityName": activity.name if activity else None
                 })
 
             role_priorities = {
@@ -314,9 +317,8 @@ class Websocket(commands.Cog):
         
     @commands.Cog.listener()
     async def on_presence_update(self, before: Member, after: Member):
-        if(before.status != after.status):
-            await self._handle_member_change(before, after)
-
+        if before.status != after.status or  before.activities != after.activities :
+            await self._handle_presence_change(before, after)
 
     @commands.Cog.listener()
     async def on_member_update(self, before: Member, after: Member):
@@ -329,10 +331,10 @@ class Websocket(commands.Cog):
             return
 
         # else
-        await self._handle_member_change(before, after) 
+        await self._handle_presence_change(before, after) 
     
-    async def _handle_member_change(self, before: Member, after: Member):
-
+    async def _handle_presence_change(self, before: Member, after: Member):
+        newActivity = self.get_highest_priority_activity(after)
         payload = WebSocketMessage(
         msgtype="presenceUpdate",
         message={
@@ -340,6 +342,7 @@ class Websocket(commands.Cog):
             "serverId": str(before.guild.id),
             "newStatus": str(after.status),
             "newDisplayName": str(after.display_name),
+            "newActivityName": newActivity.name if newActivity else None
             }
         )
 
@@ -371,6 +374,36 @@ class Websocket(commands.Cog):
         )
            
         await ws_manager.broadcast(payload)
+
+    def get_highest_priority_activity(self, member: discord.Member) -> Optional[discord.Activity]:
+
+        activities = member.activities or []
+
+        for activity in activities:
+            if isinstance(activity, discord.Streaming):
+                return activity
+
+        for activity in activities:
+            if (
+                isinstance(activity, discord.Game)
+                or isinstance(activity, discord.Spotify)
+                or (
+                    isinstance(activity, discord.Activity)
+                    and activity.type in {
+                        discord.ActivityType.playing,
+                        discord.ActivityType.watching,
+                        discord.ActivityType.listening,
+                        discord.ActivityType.competing,
+                    }
+                )
+            ):
+                return activity
+
+        for activity in activities:
+            if isinstance(activity, discord.CustomActivity):
+                return activity
+
+        return None
         
 
 async def setup(bot):
