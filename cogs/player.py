@@ -1,5 +1,4 @@
 import asyncio
-import threading
 from discord.ext import tasks
 from dataclasses import dataclass, field
 import random
@@ -32,8 +31,11 @@ class Music:
 
 class Playing:
 
-    def __init__(self, isPlaying: bool):
+    def __init__(self, isPlaying: bool, loop: asyncio.AbstractEventLoop):
         self._initializing = True
+
+        self.loop = loop
+        self._debounce_task: asyncio.Task | None = None
 
         self._debounce_timer = None
         self.isPlaying: bool = isPlaying
@@ -53,15 +55,22 @@ class Playing:
             super().__setattr__("playedDuration", 0)
 
         if name == "isPlaying" and not self._initializing:
-            print(value)
             self._debounce_update_loop_state()
 
     def _debounce_update_loop_state(self, delay=0.15):
-        if self._debounce_timer is not None:
-            self._debounce_timer.cancel()
+        if self._debounce_task and not self._debounce_task.done():
+            self._debounce_task.cancel()
 
-        self._debounce_timer = threading.Timer(delay, self._update_loop_state)
-        self._debounce_timer.start()
+        self._debounce_task = self.loop.create_task(
+            self._debounced_update(delay)
+        )
+
+    async def _debounced_update(self, delay):
+        try:
+            await asyncio.sleep(delay)
+            self._update_loop_state()
+        except asyncio.CancelledError:
+            pass
 
     def _update_loop_state(self):
         if self.isPlaying:
@@ -91,11 +100,11 @@ class Playing:
 
 class PlayerAttributes:
 
-    def __init__(self):
+    def __init__(self, loop: asyncio.AbstractEventLoop):
 
         self.mediaplayer_path: str = GLOBAL_CONFIGS.local_media_path
   
-        self.current: Playing = Playing(isPlaying=False)
+        self.current: Playing = Playing(isPlaying=False, loop=loop)
         self.musics: dict[int, Music] = {}
         self.load_songs(True)
 
@@ -204,7 +213,7 @@ class Player(commands.Cog):
 
         if IS_BOT_READY and len(self.mediaBots) == 0:
             for guild in self.bot.guilds:
-                self.mediaBots[guild.id] = PlayerAttributes()
+                self.mediaBots[guild.id] = PlayerAttributes(loop=self.bot.loop)
     
     def get_song_dict(self, serverId: int) -> Optional[dict[int, Music]]:
         return self.mediaBots.get(serverId).get_song_dict() if serverId in self.mediaBots else None
@@ -696,12 +705,12 @@ class Player(commands.Cog):
     async def on_guild_joined(self, guild: discord.Guild):
 
         if guild.id not in self.mediaBots:
-            self.mediaBots[guild.id] = PlayerAttributes()
+            self.mediaBots[guild.id] = PlayerAttributes(loop=self.bot.loop)
 
     @commands.Cog.listener()
     async def on_ready(self):
         for guild in self.bot.guilds:
-            self.mediaBots[guild.id] = PlayerAttributes()
+            self.mediaBots[guild.id] = PlayerAttributes(loop=self.bot.loop)
 
     
     async def _stop(self, guildId: int):
