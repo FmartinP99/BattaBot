@@ -83,9 +83,15 @@ class Websocket(commands.Cog):
             }
 
             guild_info["members"].sort(
-                key=lambda m: role_priorities.get(m["roleIds"][0], -1) if m["roleIds"] else -1, 
-                reverse=True
-                )
+    key=lambda m: (
+        role_priorities.get(m["roleIds"][0], -1)
+        if isinstance(m, dict)
+        and isinstance(m.get("roleIds"), list)
+        and m["roleIds"]
+        else -1
+    ),
+    reverse=True
+)
        
             roles = sorted(guild.roles, key=lambda r: r.position, reverse=True)
             for role in roles:
