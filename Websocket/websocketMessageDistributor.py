@@ -71,7 +71,12 @@ class WebsocketMessageDistributor:
 
         response = ""
         if msgtype == WebsocketMessageType.INIT:
-            response = await websocket_cog.get_all_server_information()
+            try:
+                response = await websocket_cog.get_all_server_information()
+            except Exception as e:
+                print("Error message was: " + str(message))
+                print(e)
+                return None
         elif msgtype == WebsocketMessageType.SEND_MESSAGE:
             try:
                 server_id = int(message["serverId"])

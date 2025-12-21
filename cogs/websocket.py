@@ -8,6 +8,8 @@ import asyncio
 from Websocket.websocketManager import ws_manager, WebSocketMessage
 from discord.utils import get as get
 
+from utils.remindme_helper import make_naive
+
 class Websocket(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
@@ -30,7 +32,7 @@ class Websocket(commands.Cog):
     async def get_all_server_information(self):
         await self.bot.wait_until_ready()
 
-        all_data = []
+        server_datas = []
 
         for guild in self.bot.guilds:
 
@@ -83,15 +85,15 @@ class Websocket(commands.Cog):
             }
 
             guild_info["members"].sort(
-    key=lambda m: (
-        role_priorities.get(m["roleIds"][0], -1)
-        if isinstance(m, dict)
-        and isinstance(m.get("roleIds"), list)
-        and m["roleIds"]
-        else -1
-    ),
-    reverse=True
-)
+                key=lambda m: (
+                    role_priorities.get(m["roleIds"][0], -1)
+                    if isinstance(m, dict)
+                    and isinstance(m.get("roleIds"), list)
+                    and m["roleIds"]
+                    else -1
+                ),
+                reverse=True
+            )
        
             roles = sorted(guild.roles, key=lambda r: r.position, reverse=True)
             for role in roles:
@@ -103,7 +105,16 @@ class Websocket(commands.Cog):
                     "displaySeparately": role.hoist,
                 })
 
-            all_data.append(guild_info)
+            server_datas.append(guild_info)
+
+        nowtime_utc = make_naive(datetime.now(timezone.utc))
+        nowtime_local = datetime.now()
+        gmt_offset = (nowtime_local - nowtime_utc).total_seconds() / 3600
+        
+        all_data = {
+            "gmtOffsetInHour": gmt_offset,
+            "serverDatas": server_datas
+        }
            
         return all_data
     

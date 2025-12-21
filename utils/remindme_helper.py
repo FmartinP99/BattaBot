@@ -36,7 +36,6 @@ def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optiona
     
     #2 - ('20:30', 'msg1', 'msg2' etc)
     if(regex_res_mode == TimeFormat.TIME_ONLY):
-        print(padded_args)
         message_to_send = ' '.join(padded_args[1:])
         hour, minute = map(int, mode.split(":"))
         target_time = nowtime.replace(hour=hour, minute=minute, second=0, microsecond=0)
