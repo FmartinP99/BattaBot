@@ -2,12 +2,12 @@ from datetime import datetime
 from enum import Enum
 import json
 from Websocket.websocketManager import WebSocketMessage, ws_manager
+from Websocket.websocketMessageClasses import WebsocketGetMusicPlaylistQuery, WebsocketPlaylistPauseQuery, WebsocketPlaylistResumeQuery, WebsocketPlaylistSongSkipQuery, WebsocketPlaylistStateUpdateQuery, WebsocketSendMessageQuery, WebsocketSetReminderQuery, WebsocketToggleRoleQuery, WebsocketVoiceStateUpdateQuery
 
 class WebsocketMessageType(Enum):
     NULL = ""
     INIT = "init"
     SEND_MESSAGE = "sendMessage"
-    INCOMING_MESSAGE = "incomingMessage"
     SET_REMINDER = "setReminder"
     VOICE_STATE_UPDATE = "voiceStateUpdate"
     GET_MUSIC_PLAYLIST = "getMusicPlaylist"
@@ -79,21 +79,22 @@ class WebsocketMessageDistributor:
                 return None
         elif msgtype == WebsocketMessageType.SEND_MESSAGE:
             try:
-                server_id = int(message["serverId"])
-                channel_id = int(message["channelId"])
-                response = await websocket_cog.sendMessage(server_id, channel_id, message["text"]) 
+                obj: WebsocketSendMessageQuery = WebsocketSendMessageQuery(**message)
+                server_id = int(obj.serverId)
+                channel_id = int(obj.channelId)
+                response = await websocket_cog.sendMessage(server_id, channel_id, obj.text) 
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
                 return None
         elif msgtype == WebsocketMessageType.SET_REMINDER:
             try:
-                server_id = int(message["serverId"])
-                channel_id = int(message["channelId"])
-                member_id = int(message["memberId"])
-                text = message["text"]
-
-                date_str = message["date"]
+                obj: WebsocketSetReminderQuery = WebsocketSetReminderQuery(**message)
+                server_id = int(obj.serverId)
+                channel_id = int(obj.channelId)
+                member_id = int(obj.memberId)
+                text = obj.text
+                date_str = obj.date
                 date = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
                 response = await websocket_cog.handle_set_reminder(server_id, channel_id, member_id, date, text)
             except Exception as e:
@@ -103,11 +104,10 @@ class WebsocketMessageDistributor:
             
         elif msgtype == WebsocketMessageType.VOICE_STATE_UPDATE:
             try:
-                server_id = int(message["serverId"])
-                channel_id = int(message["channelId"])
-                is_disconnect = bool(message["isDisconnect"])
-
-                response = await websocket_cog.voice_channel_update(server_id, channel_id, is_disconnect)
+                obj: WebsocketVoiceStateUpdateQuery = WebsocketVoiceStateUpdateQuery(**message)
+                server_id = int(obj.serverId)
+                channel_id = int(obj.channelId)
+                response = await websocket_cog.voice_channel_update(server_id, channel_id, obj.isDisconnect)
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
@@ -115,19 +115,29 @@ class WebsocketMessageDistributor:
             
         elif msgtype == WebsocketMessageType.GET_MUSIC_PLAYLIST:
             try:
-                server_id = int(message["serverId"])
+                obj: WebsocketGetMusicPlaylistQuery = WebsocketGetMusicPlaylistQuery(**message)
+                server_id =  server_id = int(obj.serverId)
                 response = await websocket_cog.get_music_playlist(server_id)
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
                 return None
+        
+        elif msgtype == WebsocketMessageType.PLAYLIST_STATE_UPDATE:
+            try:
+                obj: WebsocketPlaylistStateUpdateQuery = WebsocketPlaylistStateUpdateQuery(**message)
+                server_id =  server_id = int(obj.serverId)
+                response = websocket_cog.get_voice_state(server_id)
+            except Exception as e:
+                print("Error message was: " + str(message))
+                print(e)
+                return None    
 
         elif msgtype == WebsocketMessageType.PLAYLIST_SONG_SKIP:
             try:
-                server_id = int(message["serverId"])
-                song_index = int(message["songIndex"])
-
-                response = await websocket_cog.skip_song_to(server_id, song_index)
+                obj: WebsocketPlaylistSongSkipQuery = WebsocketPlaylistSongSkipQuery(**message)
+                server_id = int(obj.serverId)
+                response = await websocket_cog.skip_song_to(server_id, obj.songIndex)
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
@@ -136,27 +146,20 @@ class WebsocketMessageDistributor:
         elif msgtype == WebsocketMessageType.PLAYLIST_PAUSE or msgtype == WebsocketMessageType.PLAYLIST_RESUME:
             try:
                 is_pausing = msgtype == WebsocketMessageType.PLAYLIST_PAUSE
-                server_id = int(message["serverId"])
-
+                obj: WebsocketPlaylistPauseQuery | WebsocketPlaylistResumeQuery = WebsocketPlaylistPauseQuery(**message) if is_pausing else WebsocketPlaylistResumeQuery(**message) 
+                server_id = int(obj.serverId)
                 response = await websocket_cog.play_pause(server_id, is_pausing)
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
                 return None
-
-        elif msgtype == WebsocketMessageType.PLAYLIST_STATE_UPDATE:
-            try:
-                server_id = int(message["serverId"])
-                response = websocket_cog.get_voice_state(server_id)
-            except Exception as e:
-                print("Error message was: " + str(message))
-                print(e)
-                return None    
+            
         elif msgtype == WebsocketMessageType.TOGGLE_ROLE:
               try:
-                  server_id = int(message["serverId"])
-                  member_id = int(message["memberId"])
-                  role_id = int(message["roleId"])
+                  obj: WebsocketToggleRoleQuery = WebsocketToggleRoleQuery(**message)
+                  server_id = int(obj.serverId)
+                  member_id = int(obj.memberId)
+                  role_id = int(obj.roleId)
                   response = await websocket_cog.toggle_role(server_id, member_id, role_id)
               except Exception as e:
                 print("Error message was: " + str(message))

@@ -55,7 +55,7 @@ class Websocket(commands.Cog):
                 guild_info["channels"].append({
                     "channelId": str(channel.id),
                     "name": channel.name,
-                    "type": channel.type.value,
+                    "type": str(channel.type.value),
                     "connectedMemberIds": connected_members,
                 })
 
