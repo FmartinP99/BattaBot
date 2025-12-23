@@ -93,7 +93,6 @@ class WebsocketInitServer(Interface):
 
 @dataclass
 class WebsocketInitResponse(Interface):
-    gmtOffsetInHour: int
     servers: Optional[List[WebsocketInitServer]] 
 
 @dataclass

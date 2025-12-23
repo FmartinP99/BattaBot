@@ -99,3 +99,9 @@ def make_naive(dt: datetime) -> datetime:
         return dt.replace(tzinfo=None)
     else:
         return dt
+    
+def get_gmt_offset() -> int:
+    nowtime_utc = make_naive(datetime.now(timezone.utc))
+    nowtime = datetime.now()
+    gmt_offset = ((nowtime - nowtime_utc).total_seconds() // 3600) * -1
+    return gmt_offset

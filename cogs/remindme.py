@@ -1,10 +1,10 @@
 from discord.ext import commands
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner
 import asyncio
-from utils.remindme_helper import get_remindme_datetime_and_message
+from utils.remindme_helper import get_remindme_datetime_and_message, get_gmt_offset, make_naive
 
 class RemindMe(commands.Cog):
     def __init__(self, bot):
@@ -14,7 +14,7 @@ class RemindMe(commands.Cog):
         
     @commands.command(aliases=['rm'])
     async def remindme(self, context: commands.Context, *args):
-        
+
         nowtime = datetime.now()
         set_time, message_to_send = get_remindme_datetime_and_message(nowtime, *args)
 
@@ -24,6 +24,10 @@ class RemindMe(commands.Cog):
 
         sleep_timer = (set_time - nowtime).total_seconds()
         await context.send(f"Timer set to: {set_time.strftime('%Y-%m-%d  %H:%M')}")
+
+        gmt_offset = get_gmt_offset()
+        set_time = set_time + timedelta(hours=gmt_offset)
+
         rowId = await self.add_remindme_to_database(context.message.guild.id, context.message.channel.id, context.message.author.id, set_time, message_to_send)
         task = asyncio.create_task(self.auto_mention(
             sleep_timer, 
@@ -35,12 +39,18 @@ class RemindMe(commands.Cog):
         self.scheduled_tasks[rowId] = task
 
     async def add_remindme_from_outside(self, guild_id, channel_id, author_id, set_time, message_to_send):
+        
+        gmt_offset = get_gmt_offset()
         nowtime = datetime.now()
+        # at this point this works because both the seT_time and nowtime are in the bot's timezone
         sleep_timer = (set_time - nowtime).total_seconds()
-
         if sleep_timer < 0:
             return
         
+        #converting to utc tz
+        set_time = set_time + timedelta(hours=gmt_offset)
+       
+
         rowId = await self.add_remindme_to_database(guild_id, channel_id, author_id, set_time, message_to_send)
         task = asyncio.create_task(self.auto_mention(
             sleep_timer, 
@@ -138,7 +148,11 @@ class RemindMe(commands.Cog):
             return
 
         reminders_to_mention = [r for r in reminder_rows if not r.remind_happened]
+
         nowTime = datetime.now()
+        gmt_offset = get_gmt_offset()
+        nowTime = nowTime + timedelta(hours=gmt_offset)
+
         rows_to_delete = [r for r in reminder_rows if r.remind_happened]
         for reminder in reminders_to_mention:
             # was in the past therefore no mention, can delete them with .clearmyrms
@@ -180,12 +194,16 @@ class RemindMe(commands.Cog):
         if not rows:
             return ["No reminders found."]
         
+        nowtime = datetime.now()
+        gmt_offset = get_gmt_offset()
+        
         messages = []
         current_lines = []
-        nowtime = datetime.now()
+        
         for i, row in enumerate(rows, 1):
-            remind_unix = int(row.remind_time.timestamp())
-            status = "✅ Happened" if row.remind_happened else "❌ Due past" if not row.remind_happened and row.remind_time < nowtime else "⏳ Pending"
+            remind_time_gmt_offset = row.remind_time + timedelta(hours=gmt_offset)
+            remind_unix = int(remind_time_gmt_offset.timestamp())
+            status = "✅ Happened" if row.remind_happened else "❌ Due past" if not row.remind_happened and remind_time_gmt_offset < nowtime else "⏳ Pending"
             safe_text = row.remind_text.replace("`", "\\`")
 
             reminder_text = f"**{i}. Reminder #{row.id}** - {status}\n" \

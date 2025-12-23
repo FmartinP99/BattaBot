@@ -110,12 +110,7 @@ class Websocket(commands.Cog):
 
             server_datas.append(guild_info)
 
-        nowtime_utc = make_naive(datetime.now(timezone.utc))
-        nowtime_local = datetime.now()
-        gmt_offset = (nowtime_local - nowtime_utc).total_seconds() // 3600
-        
         all_data = {
-            "gmtOffsetInHour": gmt_offset,
             "serverDatas": server_datas
         }
            
@@ -260,8 +255,7 @@ class Websocket(commands.Cog):
         channel_id = message.channel.id
         message_id = message.id
 
-        epoch = datetime.now(timezone.utc).timestamp()
-
+        epoch = make_naive(datetime.now(timezone.utc))
         payload = WebSocketMessage(
         msgtype=WebsocketMessageType.INCOMING_MESSAGE.value,
         message={
