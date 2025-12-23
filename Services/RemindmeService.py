@@ -27,8 +27,8 @@ class RemindmeService(BaseService):
         reminder_rows = await self.databaseHandler.get_reminders()
         return reminder_rows
 
-    async def get_reminders_by_server_and_user(self, server_id: str, user_id: str) -> List[RemindRow]:
-        reminder_rows = await self.databaseHandler.get_reminders(server_id=server_id, user_id=user_id)
+    async def get_reminders_by_server_and_user(self, server_id: str, user_id: str, channel_id: Optional[str]=None) -> List[RemindRow]:
+        reminder_rows = await self.databaseHandler.get_reminders(server_id=server_id, user_id=user_id, channel_id=channel_id)
         return reminder_rows
     
     async def delete_reminder(self, reminder_id: int) -> bool:
@@ -40,4 +40,5 @@ class RemindmeService(BaseService):
     
     async def update_reminder_reminded_column(self, rowId: int, value: bool) -> bool:
         return await self.databaseHandler.update_reminder(rowId, REMIND_HAPPENED=value)
+    
 

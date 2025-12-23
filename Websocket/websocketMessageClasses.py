@@ -6,10 +6,16 @@ from python_to_typescript_interfaces import Interface
 from realtime import List
 
 @dataclass
+class WebsocketBaseResponse(Interface):
+    success: bool
+    errorText: Optional[str]
+
+@dataclass
 class WebsocketMessageType(Interface, Enum):
     NULL = ""
     INIT = "init"
     SEND_MESSAGE = "sendMessage"
+    INCOMING_MESSAGE = "incomingMessage"
     SET_REMINDER = "setReminder"
     VOICE_STATE_UPDATE = "voiceStateUpdate"
     GET_MUSIC_PLAYLIST = "getMusicPlaylist"
@@ -19,6 +25,7 @@ class WebsocketMessageType(Interface, Enum):
     PLAYLIST_RESUME = "playlistResume"
     PRESENCE_UPDATE = "presenceUpdate"
     TOGGLE_ROLE = "toggleRole"
+    GET_REMINDERS = "getReminders"
 
 @dataclass
 class MemberStatus(Interface, Enum):
@@ -44,6 +51,10 @@ class ChannelType(Interface, Enum):
     Directory = "14"
     Forum = "15"
     GuildDirectory = "16"
+
+@dataclass
+class WebsocketInitQuery(Interface):
+    text: str
 
 @dataclass
 class WebsocketInitChannels(Interface):
@@ -127,7 +138,6 @@ class WebsocketVoiceStateUpdateResponse(Interface):
 class WebsocketGetMusicPlaylistQuery(Interface):
     serverId: str
 
-""""""
 @dataclass
 class WebsocketMusic(Interface):
     index: int
@@ -145,7 +155,6 @@ class WebsocketPlaylistState(Interface):
     isPlaying: bool
     songs: List[WebsocketMusic]
     playedDuration: int
-""""""
 
 @dataclass
 class WebsocketGetMusicPlaylistResponse(Interface):
@@ -197,3 +206,29 @@ class WebsocketToggleRoleResponse(Interface):
     roleId: str
     memberId: str
     roleIsAdded: bool
+
+@dataclass
+class WebsocketGetRemindersQuery(Interface):
+    serverId: str
+    memberId: str
+
+@dataclass
+class WebsocketReminderStatus(Interface, Enum):
+    HAPPENED = "Happened"
+    DUE = "Due"
+    PENDING = "Pending"
+
+@dataclass
+class WebsocketReminder(Interface):
+    id: int
+    channel_id: str
+    created_at: datetime 
+    remind_time: datetime
+    remind_text: str
+    status: WebsocketReminderStatus
+
+@dataclass
+class WebsocketGetRemindersResponse(WebsocketBaseResponse, Interface):
+    serverId: str
+    memberId: str
+    reminders: List[WebsocketReminder]

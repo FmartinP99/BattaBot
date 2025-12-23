@@ -1,8 +1,10 @@
 from typing import List, Optional
-from discord import Member, Role
+from discord import Member
 import discord
 from discord.ext import commands
 from datetime import datetime, timezone
+from Services.RemindmeService import RemindmeService
+from Websocket.websocketMessageClasses import WebsocketMessageType
 import botMain
 import asyncio
 from Websocket.websocketManager import ws_manager, WebSocketMessage
@@ -14,6 +16,7 @@ class Websocket(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.reminderService: RemindmeService = RemindmeService()
 
     @commands.command()
     @commands.check(botMain.check_owner)
@@ -260,7 +263,7 @@ class Websocket(commands.Cog):
         epoch = datetime.now(timezone.utc).timestamp()
 
         payload = WebSocketMessage(
-        msgtype="incomingMessage",
+        msgtype=WebsocketMessageType.INCOMING_MESSAGE.value,
         message={
             "serverId": str(server_id),
             "channelId": str(channel_id),
@@ -280,7 +283,7 @@ class Websocket(commands.Cog):
         after_channel = after.channel.id if after.channel else None
 
         payload = WebSocketMessage(
-            msgtype="voiceStateUpdate",
+            msgtype=WebsocketMessageType.VOICE_STATE_UPDATE.value,
             message={
                 "memberId": str(member.id),
                 "serverId": str(member.guild.id),
@@ -353,7 +356,7 @@ class Websocket(commands.Cog):
     async def _handle_presence_change(self, before: Member, after: Member):
         new_activity = self.get_highest_priority_activity(after)
         payload = WebSocketMessage(
-        msgtype="presenceUpdate",
+        msgtype=WebsocketMessageType.PRESENCE_UPDATE.value,
         message={
             "memberId": str(before.id),
             "serverId": str(before.guild.id),
@@ -381,7 +384,7 @@ class Websocket(commands.Cog):
              return
 
         payload = WebSocketMessage(
-        msgtype="toggleRole",
+        msgtype=WebsocketMessageType.TOGGLE_ROLE.value,
         message={
             "serverId": str(server_id),
             "roleId": str(changed_role.id),
@@ -421,7 +424,6 @@ class Websocket(commands.Cog):
                 return activity
 
         return None
-        
 
 async def setup(bot):
     await bot.add_cog(Websocket(bot))

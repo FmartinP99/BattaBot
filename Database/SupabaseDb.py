@@ -58,7 +58,7 @@ class SupabaseDb(BaseDb):
     
 
     
-    async def get_reminders(self, server_id: Optional[str] = None, user_id: Optional[str] = None) -> List[RemindRow]:
+    async def get_reminders(self, server_id: Optional[str] = None, user_id: Optional[str] = None, channel_id: Optional[str]=None) -> List[RemindRow]:
         client = await self.connect()
         query = client.table("Reminders").select("*")
         
@@ -67,6 +67,9 @@ class SupabaseDb(BaseDb):
         
         if user_id is not None:
             query = query.eq("USER_ID", user_id)
+        
+        if channel_id is not None:
+            query = query.eq("CHANNEL_ID", user_id)
         
         try:
             response = await query.execute()

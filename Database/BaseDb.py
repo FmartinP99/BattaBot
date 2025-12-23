@@ -31,7 +31,7 @@ class BaseDb(ABC):
        pass
     
     @abstractmethod
-    async def get_reminders(self, server_id: Optional[str], user_id: Optional[str]) -> List[RemindRow]:
+    async def get_reminders(self, server_id: Optional[str], user_id: Optional[str], channel_id: Optional[str]) -> List[RemindRow]:
        pass
 
     # Update

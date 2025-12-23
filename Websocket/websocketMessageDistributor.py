@@ -1,22 +1,9 @@
 from datetime import datetime
 from enum import Enum
 import json
+from Services.WebsocektService import WebsocketService
 from Websocket.websocketManager import WebSocketMessage, ws_manager
-from Websocket.websocketMessageClasses import WebsocketGetMusicPlaylistQuery, WebsocketPlaylistPauseQuery, WebsocketPlaylistResumeQuery, WebsocketPlaylistSongSkipQuery, WebsocketPlaylistStateUpdateQuery, WebsocketSendMessageQuery, WebsocketSetReminderQuery, WebsocketToggleRoleQuery, WebsocketVoiceStateUpdateQuery
-
-class WebsocketMessageType(Enum):
-    NULL = ""
-    INIT = "init"
-    SEND_MESSAGE = "sendMessage"
-    SET_REMINDER = "setReminder"
-    VOICE_STATE_UPDATE = "voiceStateUpdate"
-    GET_MUSIC_PLAYLIST = "getMusicPlaylist"
-    PLAYLIST_STATE_UPDATE = "playlistStateUpdate"
-    PLAYLIST_SONG_SKIP = "playlistSongSkip"
-    PLAYLIST_PAUSE = "playlistPause"
-    PLAYLIST_RESUME = "playlistResume"
-    PRESENCE_UPDATE = "presenceUpdate"
-    TOGGLE_ROLE = "toggleRole"
+from Websocket.websocketMessageClasses import WebsocketGetMusicPlaylistQuery, WebsocketGetRemindersQuery, WebsocketMessageType, WebsocketPlaylistPauseQuery, WebsocketPlaylistResumeQuery, WebsocketPlaylistSongSkipQuery, WebsocketPlaylistStateUpdateQuery, WebsocketSendMessageQuery, WebsocketSetReminderQuery, WebsocketToggleRoleQuery, WebsocketVoiceStateUpdateQuery
 
 class WebsocketMessageDistributor:
     _instance = None
@@ -31,11 +18,14 @@ class WebsocketMessageDistributor:
         if self._initialized:
             return
         self.bot = bot
+        self.websocketService: WebsocketService = WebsocketService()
         self._initialized = True
 
     def parse_ws_message_type(self, value: str) -> WebsocketMessageType:
         try:
-            return WebsocketMessageType(value)
+            for member in WebsocketMessageType:
+                if value == member.value:
+                    return member
         except ValueError:
             return WebsocketMessageType.NULL
     
@@ -48,36 +38,40 @@ class WebsocketMessageDistributor:
             return
 
         msg_type = self.parse_ws_message_type(json_data["type"])
-        if(msg_type == WebsocketMessageType.NULL):
+
+        if(msg_type is WebsocketMessageType.NULL):
+            print(json_data)
             print("Incoming websocket message type error.")
             return
-        
+       
         message = json_data.get("message", "")
-        print(json_data)
         
         response = WebSocketMessage(
-            msgtype=msg_type,
+            msgtype=msg_type.value,
             message=await self.distribute_incoming_ws_message(msg_type, message)
         )
 
         if response.message is not None:
+            print(response.msgtype)
+            if response.msgtype == WebsocketMessageType.GET_REMINDERS.value:
+                print(response.message)
             await ws_manager.broadcast(response)
     
     async def distribute_incoming_ws_message(self, msgtype: WebsocketMessageType, message: str = ""):
-
+        
         websocket_cog = self.bot.get_cog("Websocket");
         if not websocket_cog:
             raise ValueError("Websocket cog is not found!")
 
         response = ""
-        if msgtype == WebsocketMessageType.INIT:
+        if msgtype is WebsocketMessageType.INIT:
             try:
                 response = await websocket_cog.get_all_server_information()
             except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
                 return None
-        elif msgtype == WebsocketMessageType.SEND_MESSAGE:
+        elif msgtype is WebsocketMessageType.SEND_MESSAGE:
             try:
                 obj: WebsocketSendMessageQuery = WebsocketSendMessageQuery(**message)
                 server_id = int(obj.serverId)
@@ -87,7 +81,7 @@ class WebsocketMessageDistributor:
                 print("Error message was: " + str(message))
                 print(e)
                 return None
-        elif msgtype == WebsocketMessageType.SET_REMINDER:
+        elif msgtype is WebsocketMessageType.SET_REMINDER:
             try:
                 obj: WebsocketSetReminderQuery = WebsocketSetReminderQuery(**message)
                 server_id = int(obj.serverId)
@@ -102,7 +96,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None
             
-        elif msgtype == WebsocketMessageType.VOICE_STATE_UPDATE:
+        elif msgtype is WebsocketMessageType.VOICE_STATE_UPDATE:
             try:
                 obj: WebsocketVoiceStateUpdateQuery = WebsocketVoiceStateUpdateQuery(**message)
                 server_id = int(obj.serverId)
@@ -113,7 +107,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None
             
-        elif msgtype == WebsocketMessageType.GET_MUSIC_PLAYLIST:
+        elif msgtype is WebsocketMessageType.GET_MUSIC_PLAYLIST:
             try:
                 obj: WebsocketGetMusicPlaylistQuery = WebsocketGetMusicPlaylistQuery(**message)
                 server_id =  server_id = int(obj.serverId)
@@ -123,7 +117,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None
         
-        elif msgtype == WebsocketMessageType.PLAYLIST_STATE_UPDATE:
+        elif msgtype is WebsocketMessageType.PLAYLIST_STATE_UPDATE:
             try:
                 obj: WebsocketPlaylistStateUpdateQuery = WebsocketPlaylistStateUpdateQuery(**message)
                 server_id =  server_id = int(obj.serverId)
@@ -133,7 +127,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None    
 
-        elif msgtype == WebsocketMessageType.PLAYLIST_SONG_SKIP:
+        elif msgtype is WebsocketMessageType.PLAYLIST_SONG_SKIP:
             try:
                 obj: WebsocketPlaylistSongSkipQuery = WebsocketPlaylistSongSkipQuery(**message)
                 server_id = int(obj.serverId)
@@ -143,7 +137,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None
             
-        elif msgtype == WebsocketMessageType.PLAYLIST_PAUSE or msgtype == WebsocketMessageType.PLAYLIST_RESUME:
+        elif msgtype is WebsocketMessageType.PLAYLIST_PAUSE or msgtype is WebsocketMessageType.PLAYLIST_RESUME:
             try:
                 is_pausing = msgtype == WebsocketMessageType.PLAYLIST_PAUSE
                 obj: WebsocketPlaylistPauseQuery | WebsocketPlaylistResumeQuery = WebsocketPlaylistPauseQuery(**message) if is_pausing else WebsocketPlaylistResumeQuery(**message) 
@@ -154,7 +148,7 @@ class WebsocketMessageDistributor:
                 print(e)
                 return None
             
-        elif msgtype == WebsocketMessageType.TOGGLE_ROLE:
+        elif msgtype is WebsocketMessageType.TOGGLE_ROLE:
               try:
                   obj: WebsocketToggleRoleQuery = WebsocketToggleRoleQuery(**message)
                   server_id = int(obj.serverId)
@@ -164,5 +158,19 @@ class WebsocketMessageDistributor:
               except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
-                return None    
+                return None
+              
+        elif msgtype is WebsocketMessageType.GET_REMINDERS:
+              try:
+                  obj: WebsocketGetRemindersQuery = WebsocketGetRemindersQuery(**message)
+                  server_id = int(obj.serverId)
+                  member_id = int(obj.memberId)
+                  response = await self.websocketService.get_reminders_for_user_for_server(server_id, member_id)
+                  print("getmusic playlist response was:")
+                  print(response)
+              except Exception as e:
+                print("Error message was: " + str(message))
+                print(e)
+                return None 
+
         return response

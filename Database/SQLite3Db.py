@@ -115,7 +115,7 @@ class SQLite3Db(BaseDb):
         row = cursor.fetchone()
         return self._convert_reminder_to_remindrow(row)
  
-    async def get_reminders(self, server_id: Optional[str]=None, user_id: Optional[str]=None) -> List[RemindRow]:
+    async def get_reminders(self, server_id: Optional[str]=None, user_id: Optional[str]=None, channel_id: Optional[str]=None) -> List[RemindRow]:
         conn = await self.connect()
         cursor = conn.cursor()
 
@@ -129,6 +129,10 @@ class SQLite3Db(BaseDb):
         if user_id is not None:
             conditions.append("USER_ID = ?")
             params.append(user_id)
+
+        if channel_id is not None:
+            conditions.append("CHANNEL_ID = ?")
+            params.append(channel_id)
 
         where_clause = ""
         if conditions:

@@ -7,7 +7,6 @@ import asyncio
 from Websocket.websocketManager import ws_manager
 from Websocket.websocketMessageDistributor import WebsocketMessageDistributor
 
-ws_message_distributor = WebsocketMessageDistributor(bot)
 if GLOBAL_CONFIGS.websocket_enabled:
     from fastapi import FastAPI, WebSocket
     import uvicorn
@@ -33,6 +32,7 @@ async def run_websocket_server():
 
 
 async def create_database_handler() -> None:
+    
     if GLOBAL_CONFIGS.database_type == DatabaseType.SQLITE:
         db = SQLite3Db("Database/files/database.db")
         await db.connect("Reminders", "Database/files/CreateReminderTable.sql")
@@ -42,6 +42,9 @@ async def create_database_handler() -> None:
         await db.connect()
     else:
         raise ValueError("Unsupported database type")
+    
+    global ws_message_distributor
+    ws_message_distributor = WebsocketMessageDistributor(bot)
 
 async def main_run():
     await create_database_handler()
