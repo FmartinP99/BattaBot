@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
+
+from utils.remindme_helper import get_gmt_offset
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,9 @@ class RemindRow:
 
     def __str__(self) -> str:
         nowtime = datetime.now()
+        gmt_offset = get_gmt_offset()
+        nowtime = datetime.now() + timedelta(hours=gmt_offset)
+        
         status = "✅ Happened" if self.remind_happened else "❌ Due past" if not self.remind_happened and self.remind_time < nowtime else "⏳ Pending"
         return (
             f"Reminder ID: {self.id}\n"

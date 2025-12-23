@@ -1,8 +1,9 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from Websocket.websocketMessageClasses import WebsocketGetRemindersResponse, WebsocketReminderStatus
+from utils.remindme_helper import get_gmt_offset
 
 
 class WebsocketService:
@@ -21,6 +22,9 @@ class WebsocketService:
             remind_rows: List[RemindRow] = await self.reminderService.get_reminders_by_server_and_user(server_id=server_id, user_id=user_id)
         
             nowtime = datetime.now()
+            gmt_offset = get_gmt_offset()
+            nowtime = datetime.now() + timedelta(hours=gmt_offset)
+
             for reminder in remind_rows:
                 status = WebsocketReminderStatus.HAPPENED if reminder.remind_happened else WebsocketReminderStatus.DUE if not reminder.remind_happened and reminder.remind_time < nowtime else WebsocketReminderStatus.PENDING
                 response["reminders"].append({
