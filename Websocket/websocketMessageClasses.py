@@ -222,8 +222,8 @@ class WebsocketReminderStatus(Interface, Enum):
 class WebsocketReminder(Interface):
     id: int
     channel_id: str
-    created_at: datetime 
-    remind_time: datetime
+    created_at: int 
+    remind_time: int
     remind_text: str
     status: WebsocketReminderStatus
 

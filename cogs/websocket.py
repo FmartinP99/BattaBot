@@ -112,7 +112,7 @@ class Websocket(commands.Cog):
 
         nowtime_utc = make_naive(datetime.now(timezone.utc))
         nowtime_local = datetime.now()
-        gmt_offset = (nowtime_local - nowtime_utc).total_seconds() / 3600
+        gmt_offset = (nowtime_local - nowtime_utc).total_seconds() // 3600
         
         all_data = {
             "gmtOffsetInHour": gmt_offset,

@@ -52,9 +52,6 @@ class WebsocketMessageDistributor:
         )
 
         if response.message is not None:
-            print(response.msgtype)
-            if response.msgtype == WebsocketMessageType.GET_REMINDERS.value:
-                print(response.message)
             await ws_manager.broadcast(response)
     
     async def distribute_incoming_ws_message(self, msgtype: WebsocketMessageType, message: str = ""):

@@ -28,7 +28,7 @@ class WebsocketService:
                     "channel_id": reminder.channel_id,
                     "created_at": reminder.created_at,
                     "remind_time": reminder.remind_time,
-                    "text": reminder.remind_text,
+                    "remind_text": reminder.remind_text,
                     "status": status.value
                 })
             return response
