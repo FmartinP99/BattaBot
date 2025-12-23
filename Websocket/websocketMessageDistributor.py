@@ -166,8 +166,6 @@ class WebsocketMessageDistributor:
                   server_id = int(obj.serverId)
                   member_id = int(obj.memberId)
                   response = await self.websocketService.get_reminders_for_user_for_server(server_id, member_id)
-                  print("getmusic playlist response was:")
-                  print(response)
               except Exception as e:
                 print("Error message was: " + str(message))
                 print(e)
