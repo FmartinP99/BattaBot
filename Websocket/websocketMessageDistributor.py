@@ -29,7 +29,7 @@ class WebsocketMessageDistributor:
         except ValueError:
             return WebsocketMessageType.NULL
     
-    async def handle_incoming_ws_message(self, data):
+    async def handle_incoming_ws_message(self, ws_id:str, data):
 
         json_data = json.loads(data)
         if "type" not in json_data or "message" not in json_data:
@@ -51,8 +51,9 @@ class WebsocketMessageDistributor:
             message=await self.distribute_incoming_ws_message(msg_type, message)
         )
 
+        # if we get back a direct response from distribute_incoming_ws_message, it is a client specific response.
         if response.message is not None:
-            await ws_manager.broadcast(response)
+            await ws_manager.send_to_client(ws_id, response)
     
     async def distribute_incoming_ws_message(self, msgtype: WebsocketMessageType, message: str = ""):
         

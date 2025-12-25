@@ -15,13 +15,13 @@ if GLOBAL_CONFIGS.websocket_enabled:
 
     @app.websocket("/ws")
     async def websocket_endpoint(ws: WebSocket):
-        await ws_manager.connect(ws)
+        ws_id = await ws_manager.connect(ws)
         try:
             while True:
                 data = await ws.receive_text()
-                await ws_message_distributor.handle_incoming_ws_message(data)
+                await ws_message_distributor.handle_incoming_ws_message(ws_id, data)
         finally:
-            ws_manager.disconnect(ws)
+            ws_manager.disconnect(ws_id)
 
 
 async def run_websocket_server():
