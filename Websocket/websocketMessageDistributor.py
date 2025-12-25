@@ -32,6 +32,7 @@ class WebsocketMessageDistributor:
     async def handle_incoming_ws_message(self, ws_id:str, data):
 
         json_data = json.loads(data)
+        print(json_data)
         if "type" not in json_data or "message" not in json_data:
             print("Incoming websocket message format error.")
             print(json_data)
@@ -137,7 +138,7 @@ class WebsocketMessageDistributor:
             
         elif msgtype is WebsocketMessageType.PLAYLIST_PAUSE or msgtype is WebsocketMessageType.PLAYLIST_RESUME:
             try:
-                is_pausing = msgtype == WebsocketMessageType.PLAYLIST_PAUSE
+                is_pausing = msgtype is WebsocketMessageType.PLAYLIST_PAUSE
                 obj: WebsocketPlaylistPauseQuery | WebsocketPlaylistResumeQuery = WebsocketPlaylistPauseQuery(**message) if is_pausing else WebsocketPlaylistResumeQuery(**message) 
                 server_id = int(obj.serverId)
                 response = await websocket_cog.play_pause(server_id, is_pausing)
