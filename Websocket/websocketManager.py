@@ -30,7 +30,7 @@ class WebSocketManager:
         for ws_id, ws in list(self.connected_clients.items()):
             try:
                 await ws.send_text(message.to_json())
-                print(f"Broadcast successful for {ws_id}")
+                print(f"Broadcast successful for {ws_id}: {message.msgtype}")
             except Exception as e:
                 print(f"Broadcast failed for {ws_id}: {e}")
                 self.disconnect(ws_id)
@@ -43,6 +43,7 @@ class WebSocketManager:
 
         try:
             await ws.send_text(message.to_json())
+            print(f"Send successful for {ws_id}: {message.msgtype}")
         except Exception as e:
             print(f"Send failed for {ws_id}: {e}")
             self.disconnect(ws_id)
