@@ -137,6 +137,25 @@ def test_full_date_time_valid_no_msg(mock_check, now):
 
 
 @patch("utils.remindme_helper._check_timeformat_regexes")
+def test_full_date_time_past(mock_check, now):
+    mock_check.side_effect = [
+        TimeFormat.DATE_ONLY,
+        TimeFormat.TIME_ONLY,
+        TimeFormat.FULL_DATE_TIME
+    ]
+
+    dt, msg = get_remindme_datetime_and_message(
+        now,
+        "2024-10-09",
+        "12:00",
+    )
+
+    expected = None
+    assert dt == expected
+    assert msg == "The given date is in the past, therefore remind is not possible."
+
+
+@patch("utils.remindme_helper._check_timeformat_regexes")
 def test_date_time_no_year_rollover(mock_check, now):
     mock_check.side_effect = [
         TimeFormat.DATE_ONLY,         

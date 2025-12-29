@@ -3,7 +3,6 @@ from datetime import datetime
 import os
 from sqlite3 import Connection
 from threading import Lock
-from typing import List, Optional
 from Database.BaseDb import BaseDb
 import sqlite3
 
@@ -14,10 +13,10 @@ class SQLite3Db(BaseDb):
 
     def __init__(self, db_path):
         self._db_path = db_path
-        self._connection: Optional[Connection] = None
+        self._connection: Connection | None = None
         self._lock = Lock()
 
-    async def connect(self, tableName: Optional[str] = None, sql_file: Optional[str] = None) -> Optional[Connection]:
+    async def connect(self, tableName: str | None = None, sql_file: str | None = None) -> Connection | None:
         def sync_connect():
             if self._connection is None:
                 try:
@@ -70,7 +69,7 @@ class SQLite3Db(BaseDb):
         except Exception as e:
             return False
         
-    def _parse_datetime(self, value: str) -> Optional[datetime]:
+    def _parse_datetime(self, value: str) -> datetime | None:
         if not value:
             return None
         try:
@@ -78,7 +77,7 @@ class SQLite3Db(BaseDb):
         except ValueError:
             return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
         
-    def _convert_reminder_to_remindrow(self, row:sqlite3.Row)-> Optional[RemindRow]:
+    def _convert_reminder_to_remindrow(self, row:sqlite3.Row)-> RemindRow | None:
         if row is None:
             return None
 
@@ -108,14 +107,14 @@ class SQLite3Db(BaseDb):
             conn.commit()
             return cursor.lastrowid
 
-    async def get_reminder(self, reminder_id: int) -> Optional[RemindRow]:
+    async def get_reminder(self, reminder_id: int) -> RemindRow | None:
         conn = await self.connect()
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Reminders WHERE ID=?", (reminder_id,))
         row = cursor.fetchone()
         return self._convert_reminder_to_remindrow(row)
  
-    async def get_reminders(self, server_id: Optional[str]=None, user_id: Optional[str]=None, channel_id: Optional[str]=None) -> List[RemindRow]:
+    async def get_reminders(self, server_id: str | None=None, user_id: str | None=None, channel_id: str | None=None) -> RemindRow | None:
         conn = await self.connect()
         cursor = conn.cursor()
 

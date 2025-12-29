@@ -11,7 +11,7 @@ class TimeFormat(Enum):
     NUMBER = auto()                 # integer
     INVALID = auto()
 
-def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optional[datetime], str]:
+def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[datetime | None, str]:
 
     mode = args[0]
     regex_res_mode = _check_timeformat_regexes(mode)
@@ -61,12 +61,14 @@ def get_remindme_datetime_and_message(nowtime: datetime, *args) -> tuple[Optiona
         if datetime_regex == TimeFormat.FULL_DATE_TIME:
             year, month, day = map(int, mode.split("-"))
             target_time = nowtime.replace(year=year, month=month, day=day, hour=hour, minute=minute)
+            if target_time <= nowtime:
+                return (None, "The given date is in the past, therefore remind is not possible.")
+
         elif datetime_regex == TimeFormat.DATE_TIME_NO_YEAR:
             month, day = map(int, mode.split("-"))
             target_time = nowtime.replace(month=month, day=day, hour=hour, minute=minute)
-
-        if target_time <= nowtime:
-            target_time = target_time.replace(year=target_time.year + 1)
+            if target_time <= nowtime:
+                target_time = target_time.replace(year=target_time.year + 1)
 
         return (target_time, message_to_send)
     

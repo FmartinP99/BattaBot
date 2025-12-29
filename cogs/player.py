@@ -40,7 +40,7 @@ class Playing:
 
         self._debounce_timer = None
         self.isPlaying: bool = isPlaying
-        self.music: Optional[Music] = None
+        self.music: Music | None = None
         self.modifiedAt: float = time.time()
         self.playedDuration: int = 0
         self._increment_loop.start()
@@ -109,8 +109,8 @@ class PlayerAttributes:
         self.musics: dict[int, Music] = {}
         self.load_songs(True)
 
-        self.now_playing_guid: Optional[uuid.UUID] = None # so that only the correct play_music callback loop is executed, the other(s) terminate
-        self.playlistMessage: Optional[discord.Message] = None
+        self.now_playing_guid: uuid.UUID | None = None # so that only the correct play_music callback loop is executed, the other(s) terminate
+        self.playlistMessage: discord.Message | None = None
 
 
     def load_songs(self, shuffle:bool=False ):
@@ -194,7 +194,7 @@ class PlayerAttributes:
     def get_song_dict(self) -> dict[int, Music]:
         return self.musics
     
-    def get_song(self, index: int) -> Optional[Music]:
+    def get_song(self, index: int) -> Music | None:
         return self.musics.get(index)
     
     def get_current_song_inferred_title(self) -> str:
@@ -216,10 +216,10 @@ class Player(commands.Cog):
             for guild in self.bot.guilds:
                 self.mediaBots[guild.id] = PlayerAttributes(loop=self.bot.loop)
     
-    def get_song_dict(self, serverId: int) -> Optional[dict[int, Music]]:
+    def get_song_dict(self, serverId: int) -> dict[int, Music] | None:
         return self.mediaBots.get(serverId).get_song_dict() if serverId in self.mediaBots else None
     
-    def get_current_state(self, serverId: int) -> Optional[Playing]:
+    def get_current_state(self, serverId: int) -> Playing | None:
          return self.mediaBots.get(serverId).current if serverId in self.mediaBots else None
     
     async def join(self, channelId: int, guildId: int):
@@ -669,7 +669,7 @@ class Player(commands.Cog):
         if voice and voice.is_playing():
             voice.stop()
 
-    def get_channel_by_id(self, channel_id: int) -> Optional[discord.abc.GuildChannel]:
+    def get_channel_by_id(self, channel_id: int) -> discord.abc.GuildChannel | None:
         channel = self.bot.get_channel(channel_id)
         if channel is not None:
             return channel
@@ -681,7 +681,7 @@ class Player(commands.Cog):
             return None
             """
         
-    def get_guild_by_id(self, guild_id: int) -> Optional[discord.Guild]:
+    def get_guild_by_id(self, guild_id: int) -> discord.Guild | None:
         guild = self.bot.get_guild(guild_id)
         if guild is not None:
             return guild
@@ -694,7 +694,7 @@ class Player(commands.Cog):
             return None
         """
         
-    def get_voice_client(self, guild) -> Optional[discord.VoiceClient]:
+    def get_voice_client(self, guild) -> discord.VoiceClient | None:
         voice = get(self.bot.voice_clients, guild=guild)
         if isinstance(voice, discord.VoiceClient):
             return voice

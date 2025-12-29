@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List
 from Database.Classes.Remind import CreateRemind, RemindRow
 
 class BaseDb(ABC):
@@ -13,7 +13,7 @@ class BaseDb(ABC):
         return cls._instances[cls]  
 
     @abstractmethod
-    async def connect(self, tableName: Optional[str] = None, sql_file: Optional[str] = None):
+    async def connect(self, tableName: str | None = None, sql_file: str | None = None):
         pass
 
     @classmethod
@@ -27,11 +27,11 @@ class BaseDb(ABC):
 
     # Read
     @abstractmethod
-    async def get_reminder(self, reminder_id: int) -> Optional[RemindRow]:
+    async def get_reminder(self, reminder_id: int) -> RemindRow | None:
        pass
     
     @abstractmethod
-    async def get_reminders(self, server_id: Optional[str], user_id: Optional[str], channel_id: Optional[str]) -> List[RemindRow]:
+    async def get_reminders(self, server_id: str | None, user_id: str | None, channel_id: str | None) -> List[RemindRow]:
        pass
 
     # Update

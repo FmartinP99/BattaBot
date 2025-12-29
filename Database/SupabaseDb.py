@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from supabase import AsyncClient, acreate_client
 from Database.BaseDb import BaseDb
 from Database.Classes.Remind import CreateRemind, RemindRow
@@ -9,9 +9,9 @@ class SupabaseDb(BaseDb):
     def __init__(self, url: str, key: str):
         self._url = url
         self._key = key
-        self._client: Optional[AsyncClient] = None
+        self._client: AsyncClient | None = None
 
-    async def connect(self) -> Optional[AsyncClient]:
+    async def connect(self) -> AsyncClient | None:
         if self._client is None:
             self._client = await acreate_client(self._url, self._key)
             print("Connected to Supabase.")
@@ -37,7 +37,7 @@ class SupabaseDb(BaseDb):
         
         return None
     
-    async def get_reminder(self, reminder_id: int) -> Optional[RemindRow]:
+    async def get_reminder(self, reminder_id: int) -> RemindRow | None:
         client = await self.connect()
 
         try:
@@ -58,7 +58,7 @@ class SupabaseDb(BaseDb):
     
 
     
-    async def get_reminders(self, server_id: Optional[str] = None, user_id: Optional[str] = None, channel_id: Optional[str]=None) -> List[RemindRow]:
+    async def get_reminders(self, server_id: str | None = None, user_id: str | None = None, channel_id: str | None=None) -> List[RemindRow]:
         client = await self.connect()
         query = client.table("Reminders").select("*")
         
@@ -141,7 +141,7 @@ class SupabaseDb(BaseDb):
         
         return len(response.data or [])
     
-    def _convert_reminder_to_remindrow(self, row: dict) -> Optional[RemindRow]:
+    def _convert_reminder_to_remindrow(self, row: dict) -> RemindRow | None:
         if row is None:
             return None
         

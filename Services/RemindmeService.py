@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from Database.Classes.Remind import CreateRemind, RemindRow
 from Services.BaseService import BaseService
 from utils.remindme_helper import make_naive
@@ -20,14 +20,14 @@ class RemindmeService(BaseService):
         inserted_id = await self.databaseHandler.add_reminder(row)
         return inserted_id
 
-    async def get_reminder(self, row_id: int) -> Optional[RemindRow]:
+    async def get_reminder(self, row_id: int) -> RemindRow | None:
         return await self.databaseHandler.get_reminder(row_id) 
     
     async def get_all_reminders(self) -> List[RemindRow]:
         reminder_rows = await self.databaseHandler.get_reminders()
         return reminder_rows
 
-    async def get_reminders_by_server_and_user(self, server_id: str, user_id: str, channel_id: Optional[str]=None) -> List[RemindRow]:
+    async def get_reminders_by_server_and_user(self, server_id: str, user_id: str, channel_id: str | None=None) -> List[RemindRow]:
         reminder_rows = await self.databaseHandler.get_reminders(server_id=server_id, user_id=user_id, channel_id=channel_id)
         return reminder_rows
     

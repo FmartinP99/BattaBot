@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from discord import Member
 import discord
 from discord.ext import commands
@@ -389,7 +389,7 @@ class Websocket(commands.Cog):
            
         await ws_manager.broadcast(payload)
 
-    def get_highest_priority_activity(self, member: discord.Member) -> Optional[discord.Activity]:
+    def get_highest_priority_activity(self, member: discord.Member) -> discord.Activity | None:
 
         activities = member.activities or []
 
