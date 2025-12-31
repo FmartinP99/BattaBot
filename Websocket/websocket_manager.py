@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import uuid
 from dataclasses_json import dataclass_json
-import json
 from typing import Union
 
 from fastapi import WebSocket

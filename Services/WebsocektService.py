@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import List
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
-from Websocket.websocketMessageClasses import WebsocketGetRemindersResponse, WebsocketReminderStatus
+from Websocket.websocket_message_classes import WebsocketGetRemindersResponse, WebsocketReminderStatus
 from utils.remindme_helper import get_gmt_offset
 
 

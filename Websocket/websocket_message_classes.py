@@ -83,6 +83,15 @@ class WebsocketInitRoles(Interface):
     displaySeparately: bool
 
 @dataclass
+class WebsocketInitEmotes(Interface):
+    id: str
+    name: str
+    rawStr: str
+    animated: bool
+    available: bool
+    url: str
+
+@dataclass
 class WebsocketInitServer(Interface):
     guildId: str
     guildName: str
@@ -90,6 +99,7 @@ class WebsocketInitServer(Interface):
     channels: Optional[List[WebsocketInitChannels]]
     members: Optional[List[WebsocketInitMembers]]
     roles: Optional[List[WebsocketInitRoles]]
+    emotes: Optional[List[WebsocketInitEmotes]]
 
 @dataclass
 class WebsocketInitResponse(Interface):

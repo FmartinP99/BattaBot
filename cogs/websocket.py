@@ -4,10 +4,10 @@ import discord
 from discord.ext import commands
 from datetime import datetime, timezone
 from Services.RemindmeService import RemindmeService
-from Websocket.websocketMessageClasses import WebsocketMessageType
+from Websocket.websocket_message_classes import WebsocketMessageType
 import botMain
 import asyncio
-from Websocket.websocketManager import ws_manager, WebSocketMessage
+from Websocket.websocket_manager import ws_manager, WebSocketMessage
 from discord.utils import get as get
 
 from utils.remindme_helper import make_naive
@@ -45,7 +45,8 @@ class Websocket(commands.Cog):
                 "iconUrl": guild.icon.url if guild.icon else None,
                 "channels": [],
                 "members": [],
-                "roles": []
+                "roles": [],
+                "emotes": []
             }
 
             for channel in guild.channels:
@@ -106,6 +107,16 @@ class Websocket(commands.Cog):
                     "priority": role.position,
                     "color": F"#{role.color.value:06x}",
                     "displaySeparately": role.hoist,
+                })
+
+            for emoji in guild.emojis:
+                guild_info["emotes"].append({
+                    "id": str(emoji.id),
+                    "name": emoji.name,
+                    "rawStr": f"<:{emoji.name}:{str(emoji.id)}>",
+                    "animated": emoji.animated,
+                    "available": emoji.available,
+                    "url": str(emoji.url)
                 })
 
             server_datas.append(guild_info)

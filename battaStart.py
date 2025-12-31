@@ -4,8 +4,8 @@ from Database.SQLite3Db import SQLite3Db
 from botMain import bot, token, load_extensions
 from global_config import GLOBAL_CONFIGS, DatabaseType
 import asyncio
-from Websocket.websocketManager import ws_manager
-from Websocket.websocketMessageDistributor import WebsocketMessageDistributor
+from Websocket.websocket_manager import ws_manager
+from Websocket.websocket_message_distributor import WebsocketMessageDistributor
 
 if GLOBAL_CONFIGS.websocket_enabled:
     from fastapi import FastAPI, WebSocket

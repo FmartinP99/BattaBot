@@ -2,8 +2,8 @@ from datetime import datetime
 from enum import Enum
 import json
 from Services.WebsocektService import WebsocketService
-from Websocket.websocketManager import WebSocketMessage, ws_manager
-from Websocket.websocketMessageClasses import WebsocketGetMusicPlaylistQuery, WebsocketGetRemindersQuery, WebsocketMessageType, WebsocketPlaylistPauseQuery, WebsocketPlaylistResumeQuery, WebsocketPlaylistSongSkipQuery, WebsocketPlaylistStateUpdateQuery, WebsocketSendMessageQuery, WebsocketSetReminderQuery, WebsocketToggleRoleQuery, WebsocketVoiceStateUpdateQuery
+from Websocket.websocket_manager import WebSocketMessage, ws_manager
+from Websocket.websocket_message_classes import WebsocketGetMusicPlaylistQuery, WebsocketGetRemindersQuery, WebsocketMessageType, WebsocketPlaylistPauseQuery, WebsocketPlaylistResumeQuery, WebsocketPlaylistSongSkipQuery, WebsocketPlaylistStateUpdateQuery, WebsocketSendMessageQuery, WebsocketSetReminderQuery, WebsocketToggleRoleQuery, WebsocketVoiceStateUpdateQuery
 
 class WebsocketMessageDistributor:
     _instance = None
