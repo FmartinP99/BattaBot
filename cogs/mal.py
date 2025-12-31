@@ -1,4 +1,3 @@
-import difflib
 from jikanpy import AioJikan
 from discord.ext import commands
 import discord

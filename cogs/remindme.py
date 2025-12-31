@@ -1,5 +1,5 @@
 from discord.ext import commands
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner

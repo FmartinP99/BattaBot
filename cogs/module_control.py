@@ -8,7 +8,7 @@ class ModuleControl(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.check(check_owner)  # if TRUE it runs if FALSE it won't
+    @commands.check(check_owner)  
     async def load(self, context, extension):
         if extension not in PROTECTED_MODULES_FROM_LOADING and extension not in PROTECTED_MODULES:
             await bot.load_extension(f'cogs.{extension}')

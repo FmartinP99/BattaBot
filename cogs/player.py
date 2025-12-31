@@ -1,8 +1,7 @@
 import asyncio
 from discord.ext import tasks
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import random
-from typing import Optional
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 import os
