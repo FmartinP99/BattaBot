@@ -110,10 +110,12 @@ class Websocket(commands.Cog):
                 })
 
             for emoji in guild.emojis:
+                animated = "a" if emoji.animated else "";
+                rawStr = f"<{animated}:{emoji.name}:{str(emoji.id)}>",
                 guild_info["emotes"].append({
                     "id": str(emoji.id),
                     "name": emoji.name,
-                    "rawStr": f"<:{emoji.name}:{str(emoji.id)}>",
+                    "rawStr": rawStr,
                     "animated": emoji.animated,
                     "available": emoji.available,
                     "url": str(emoji.url)
