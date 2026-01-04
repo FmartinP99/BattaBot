@@ -4,7 +4,7 @@ from Database.Classes.Remind import RemindRow
 from Services.RemindmeService import RemindmeService
 from botMain import check_owner
 import asyncio
-from utils.remindme_helper import get_remindme_datetime_and_message, get_gmt_offset, make_naive
+from utils.remindme_helper import get_remindme_datetime_and_message, get_gmt_offset
 
 class RemindMe(commands.Cog):
     def __init__(self, bot):
