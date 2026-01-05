@@ -15,8 +15,6 @@ class HelpCommandAttributes():
         self.helpMessageWritten = None #  {prefix}help   - message
         self.makeEmbedMessages()
 
-
-
     def makeEmbedMessages(self):
         em = discord.Embed(title='0 - Help',
                            description=f'Use {prefix}help <command> or {prefix}help <module>_<command> (if the <module> and the <command> has the same name) for extended information!',

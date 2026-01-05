@@ -8,7 +8,6 @@ from botMain import prefix, IS_BOT_READY
 from global_config import GLOBAL_CONFIGS
 from dataclasses import dataclass
 
-
 class MalSearchAttributes:
 
     def __init__(self, similarity=0.8):

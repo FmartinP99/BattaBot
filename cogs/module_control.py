@@ -2,7 +2,6 @@ from discord.ext import commands
 from botMain import check_owner, bot, PROTECTED_MODULES, PROTECTED_MODULES_FROM_LOADING
 import os
 
-
 class ModuleControl(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
